@@ -259,11 +259,12 @@ var CHECKS = [
   {label:'Budget',          key:'ccebf09951eb26465211998ecdfe5b7a30abef13'},
   {label:'Competitors',     key:'e3f3dad7e208d601384a087c9ff83de3f1c07370'},
   {label:'Objections',      key:'5bda8cb706195ea83dc54627b39c98df8496bc52'},
-  {label:'Website',         key:'website'}
+  {label:'Website',         key:'__website__'}
 ];
 var FOUR_S = ['Size','Struggles','Softwares','Spend'];
 
 var allDeals    = [];
+var websiteFilterIds = new Set();
 var activeFields = [];
 var starOnly    = false;
 var selOwners   = [];
@@ -275,6 +276,10 @@ function isEmpty(v){
   if(typeof v==='string'&&v.trim()==='')return true;
   if(Array.isArray(v)&&v.length===0)return true;
   return false;
+}
+function isMissing(deal, check){
+  if(check.key==='__website__') return websiteFilterIds.has(deal.id);
+  return isEmpty(deal[check.key]);
 }
 function isStar(d){return d.title&&d.title.indexOf('***')!==-1;}
 
@@ -430,15 +435,31 @@ function renderPie(deals){
 }
 
 
+async function fetchWebsiteFilter(){
+  websiteFilterIds = new Set();
+  var start=0, more=true;
+  while(more){
+    var url='https://api.pipedrive.com/v1/deals?api_token='+PD_TOKEN+
+      '&filter_id=20540&status=open&limit=500&start='+start;
+    var res=await fetch(url);
+    var data=await res.json();
+    if(!data.success) break;
+    (data.data||[]).forEach(function(d){ websiteFilterIds.add(d.id); });
+    more=!!(data.additional_data&&data.additional_data.pagination&&data.additional_data.pagination.more_items_in_collection);
+    start+=500;
+  }
+}
+
 async function loadDeals(){
   document.getElementById('pd-summary').innerHTML='';
   document.getElementById('pd-results').innerHTML=
     '<div class="state-block"><div class="loader">'+
     '<div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>'+
-    '</div><p>Fetching deals\u2026</p></div>';
+    '</div><p>Fetching deals…</p></div>';
   try{
     allDeals=[];
     var start=0,more=true;
+    var websiteFetch=fetchWebsiteFilter();
     while(more){
       var url='https://api.pipedrive.com/v1/deals?api_token='+PD_TOKEN+
         '&pipeline_id='+PD_PIPELINE+'&status=open&limit=500&start='+start;
@@ -449,6 +470,7 @@ async function loadDeals(){
       more=!!(data.additional_data&&data.additional_data.pagination&&data.additional_data.pagination.more_items_in_collection);
       start+=500;
     }
+    await websiteFetch;
     renderResults();
   }catch(err){
     document.getElementById('pd-results').innerHTML=
@@ -482,11 +504,11 @@ function renderResults(){
   // Per-field counts across filtered
   var counts={};
   CHECKS.forEach(function(c){
-    counts[c.label]=filtered.filter(function(d){return isEmpty(d[c.key]);}).length;
+    counts[c.label]=filtered.filter(function(d){return isMissing(d,c);}).length;
   });
 
   // Flagged = at least one empty field
-  var flagged     = filtered.filter(function(d){return CHECKS.some(function(c){return isEmpty(d[c.key]);});});
+  var flagged     = filtered.filter(function(d){return CHECKS.some(function(c){return isMissing(d,c);});});
   var flaggedStar = flagged.filter(isStar);
 
   var totalStar   = filtered.filter(isStar).length;
@@ -496,7 +518,7 @@ function renderResults(){
     ? flagged.filter(function(d){
         return activeFields.some(function(lbl){
           var c=CHECKS.find(function(c){return c.label===lbl;});
-          return c&&isEmpty(d[c.key]);
+          return c&&isMissing(d,c);
         });
       })
     : flagged;
@@ -571,7 +593,7 @@ function renderResults(){
     var ownerName=d.owner_name||(d.user_id&&d.user_id.name)||'Unknown';
     var stageName=STAGES[d.stage_id]||('Stage '+d.stage_id);
     var star=isStar(d);
-    var issues=CHECKS.filter(function(c){return isEmpty(d[c.key]);}).map(function(c){return c.label;});
+    var issues=CHECKS.filter(function(c){return isMissing(d,c);}).map(function(c){return c.label;});
     var displayTitle = star ? d.title.replace('***','').trim() : d.title;
     out+=
       '<div class="result-item'+(star?' is-star':'')+'" style="animation-delay:'+Math.min(i*12,400)+'ms">'+
