@@ -230,18 +230,17 @@ footer {
         Only flags records where <span>Status</span> = <span>Current</span> and <span>Site type</span> = <span>Main site</span>
       </div>
       <div class="criteria-list">
-        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Link to TT Site</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Link to TT site</span>
         <span class="criteria-pill"><span class="criteria-pill-dot"></span>Database</span>
         <span class="criteria-pill"><span class="criteria-pill-dot"></span>Link to customer's main website</span>
-        <span class="criteria-pill has-note"><span class="criteria-pill-dot"></span>Sub-sector <span class="criteria-note">empty or "Other"</span></span>
+        <span class="criteria-pill has-note"><span class="criteria-pill-dot"></span>Sub-Sector <span class="criteria-note">empty or "Other"</span></span>
         <span class="criteria-pill"><span class="criteria-pill-dot"></span>Education Gender</span>
         <span class="criteria-pill"><span class="criteria-pill-dot"></span>UK Nations</span>
-        <span class="criteria-pill"><span class="criteria-pill-dot"></span>US State</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>US State (if applicable)</span>
         <span class="criteria-pill"><span class="criteria-pill-dot"></span>Australian State</span>
       </div>
     </div>
     <button class="run-btn" id="at-run" onclick="runAirtable()">Check records for missing data</button>
-    <button class="debug-btn" id="at-debug-btn" onclick="debugAirtable()">inspect raw field names from API</button>
     <div id="at-results" style="margin-top:32px;"></div>
   </div>
 
@@ -270,13 +269,13 @@ var PD_TOKEN = '61d3d6dd5ff041a05ffc62b30b5ea05442382c93';
 var AT_GATE = { 'Status': 'Current', 'Site type': 'Main site' };
 
 var AT_CHECKS = [
-  { field: 'Link to TT Site' },
+  { field: 'Link to TT site' },
   { field: 'Database' },
   { field: "Link to customer's main website" },
-  { field: 'Sub-sector', also: ['Other'] },
+  { field: 'Sub-Sector', also: ['Other'] },
   { field: 'Education Gender' },
   { field: 'UK Nations' },
-  { field: 'US State' },
+  { field: 'US State (if applicable)' },
   { field: 'Australian State' }
 ];
 
@@ -416,57 +415,6 @@ async function runAirtable() {
   btn.disabled = false;
 }
 
-async function debugAirtable() {
-  var btn = document.getElementById('at-debug-btn');
-  btn.textContent = 'fetching\u2026';
-  btn.disabled = true;
-  try {
-    var url = 'https://api.airtable.com/v0/' + encodeURIComponent(AT_BASE) + '/' + encodeURIComponent(AT_TABLE) + '?pageSize=10';
-    var res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + AT_TOKEN } });
-    var data = await res.json();
-    if (!data.records || !data.records.length) {
-      showError('at-results', 'No records returned');
-      return;
-    }
-
-    // Prefer a record that passes the gate, fall back to first
-    var gatedRec = null;
-    for (var i = 0; i < data.records.length; i++) {
-      var f = data.records[i].fields || {};
-      var passes = Object.keys(AT_GATE).every(function(k) { return f[k] === AT_GATE[k]; });
-      if (passes) { gatedRec = data.records[i]; break; }
-    }
-    var rec = gatedRec || data.records[0];
-    var fields = rec.fields || {};
-    var passesGate = Object.keys(AT_GATE).every(function(k) { return fields[k] === AT_GATE[k]; });
-
-    var checkFieldNames = AT_CHECKS.map(function(c) { return c.field; });
-
-    var rows = '';
-    Object.keys(fields).forEach(function(k) {
-      var v = fields[k];
-      var display = Array.isArray(v) ? JSON.stringify(v) : String(v === null || v === undefined ? '' : v);
-      if (display.length > 120) display = display.slice(0, 120) + '\u2026';
-      var isChecked = checkFieldNames.indexOf(k) !== -1;
-      rows += '<tr' + (isChecked ? ' class="match"' : '') + '>' +
-        '<td>' + esc(k) + (isChecked ? ' \u2713' : '') + '</td>' +
-        '<td>' + esc(display) + '</td></tr>';
-    });
-
-    document.getElementById('at-results').innerHTML =
-      '<div class="criteria-card">' +
-      '<div class="criteria-card-title">Raw fields \u2014 ' + esc(rec.id) +
-      (passesGate ? ' (passes gate \u2713)' : ' (does NOT pass gate \u2014 check Status + Site type values)') + '</div>' +
-      '<p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:14px">' +
-      'Fields matching your configured checks are highlighted (\u2713). Check spelling and capitalisation exactly.' +
-      '</p>' +
-      '<table class="debug-table">' + rows + '</table></div>';
-  } catch(err) {
-    showError('at-results', err.message);
-  }
-  btn.textContent = 'inspect raw field names from API';
-  btn.disabled = false;
-}
 
 async function runPipedrive() {
   document.getElementById('pd-results').innerHTML =
