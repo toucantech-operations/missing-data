@@ -439,6 +439,8 @@ async function loadDeals(){
       start+=500;
     }
     await wf;
+    // Exclude any deals from pipeline 9
+    allDeals=allDeals.filter(function(d){return d.pipeline_id!==9;});
     // Restrict website filter to only deals actually in the main pipeline
     var pipelineIds=new Set(allDeals.map(function(d){return d.id;}));
     websiteFilterIds.forEach(function(id){if(!pipelineIds.has(id))websiteFilterIds.delete(id);});
@@ -528,7 +530,10 @@ function renderInsights(filtered,flagged,displayed){
   });
 
   /* Most wanted: top 8 from displayed (respects field filter), by missing count then value */
+  var MW_STAGE_ORDER=[60,57,59,56,58,55,54]; // awaiting contract first
   var wanted=displayed.slice().sort(function(a,b){
+    var ai=MW_STAGE_ORDER.indexOf(a.stage_id),bi=MW_STAGE_ORDER.indexOf(b.stage_id);
+    if(ai!==bi)return (ai===-1?99:ai)-(bi===-1?99:bi);
     var md=missingCount(b)-missingCount(a);
     if(md!==0)return md;
     return (b.value||0)-(a.value||0);
@@ -549,7 +554,7 @@ function renderInsights(filtered,flagged,displayed){
 
   document.getElementById('pd-insights').innerHTML=
     '<div class="insights-row">'+
-    '<div class="insight-card"><div class="insight-title">Owner leaderboard <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— higher = worse</span></div>'+lbHtml+'</div>'+
+    '<div class="insight-card"><div class="insight-title">Owner leaderboard <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— more missing data</span></div>'+lbHtml+'</div>'+
     '<div class="insight-card"><div class="insight-title">Stage heatmap <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— % incomplete</span></div>'+hmHtml+'</div>'+
     '<div class="insight-card"><div class="insight-title" style="display:flex;align-items:center;gap:5px">Most wanted<span class="info-btn">ⓘ<span class="info-tooltip">Ranked by number of missing fields (out of 10). Ties broken by deal value — higher value ranks first. Shows the top 8 deals most in need of attention.</span></span></div>'+mwHtml+'</div>'+
     '</div>';
