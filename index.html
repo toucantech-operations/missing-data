@@ -519,7 +519,7 @@ function renderInsights(filtered,flagged,displayed){
     if(!stageTotal[s])return;
     var pct=Math.round(((stageFlagged[s]||0)/stageTotal[s])*100);
     var barW=stageMaxPct>0?Math.round((pct/100/stageMaxPct)*100):0;
-    var col=pct>66?'#E8C040':pct>33?'#C8A000':'#40B870';
+    var col=pct>=70?'#E07040':pct>=30?'#C8A000':'#40B870';
     hmHtml+='<div class="heatmap-row">'+
       '<div class="heatmap-stage" title="'+esc(STAGES[id]||id)+'">'+esc((STAGES[id]||id).replace('Made (Slow)','(S)').replace('Made (Fast)','(F)'))+'</div>'+
       '<div class="heatmap-bar-wrap"><div class="heatmap-bar" style="width:'+barW+'%;background:'+col+'"></div></div>'+
