@@ -23,13 +23,14 @@
   --tag-bg:#0A3828;
   --danger-bg:#201800;--danger-border:#604800;--danger-text:#E8C040;
   --success-bg:#041C10;--success-border:#107040;--success-text:#40E090;
+  --star:#C8C000;--star-bg:#1A1800;--star-border:#403800;
 }
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;min-height:100vh;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
-.shell{max-width:960px;margin:0 auto;padding:32px 28px 80px}
+.shell{max-width:1000px;margin:0 auto;padding:32px 28px 80px}
 
 /* Header */
-header{position:relative;padding:32px 36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:24px}
+header{padding:32px 36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:24px}
 header h1{font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:300;line-height:1.06;letter-spacing:-0.01em;color:var(--text)}
 header h1 em{font-style:italic;font-weight:300;opacity:0.45}
 header p{margin-top:8px;font-size:13px;font-weight:300;color:var(--muted);line-height:1.8}
@@ -44,41 +45,97 @@ header p{margin-top:8px;font-size:13px;font-weight:300;color:var(--muted);line-h
 .tab-soon{font-size:10px;opacity:0.4;font-family:var(--mono);margin-left:2px}
 
 /* Filter bar */
-.filter-bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px}
-.filter-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px}
+.filter-group{display:flex;flex-direction:column;gap:5px;min-width:150px}
 .filter-group label{font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
-.filter-group select{height:40px;padding:0 12px;font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);outline:none;appearance:none;transition:border-color var(--transition);cursor:pointer}
-.filter-group select:focus{border-color:var(--border-strong)}
-select option{background:var(--surface2);color:var(--text)}
+
+/* Multi-select dropdown */
+.multi-select{position:relative}
+.multi-select-trigger{
+  min-height:40px;padding:6px 12px;font-family:var(--sans);font-size:13px;font-weight:300;
+  color:var(--text);background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;transition:border-color var(--transition);
+  user-select:none;min-width:150px;
+}
+.multi-select-trigger:hover{border-color:var(--border-strong)}
+.multi-select-trigger.open{border-color:var(--border-strong)}
+.multi-select-trigger-text{flex:1;font-size:12px;line-height:1.4}
+.multi-select-arrow{font-size:10px;opacity:0.5;flex-shrink:0;transition:transform var(--transition)}
+.multi-select-trigger.open .multi-select-arrow{transform:rotate(180deg)}
+.multi-select-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:100;
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius);min-width:100%;box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  overflow:hidden;
+}
+.multi-select-dropdown.hidden{display:none}
+.multi-option{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;
+  font-size:13px;color:var(--text);cursor:pointer;font-family:var(--sans);
+  transition:background var(--transition);white-space:nowrap;
+}
+.multi-option:hover{background:var(--tag-bg)}
+.multi-option.selected{color:var(--accent)}
+.multi-checkbox{
+  width:14px;height:14px;border:1px solid var(--border-strong);border-radius:3px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:10px;background:var(--surface2);
+}
+.multi-option.selected .multi-checkbox{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+
+/* Star filter toggle */
+.star-toggle{
+  height:40px;padding:0 16px;font-family:var(--mono);font-size:11px;
+  color:var(--muted);background:none;border:1px solid var(--border);
+  border-radius:var(--radius);cursor:pointer;white-space:nowrap;
+  transition:border-color var(--transition),color var(--transition),background var(--transition);
+  display:flex;align-items:center;gap:6px;align-self:flex-end;
+}
+.star-toggle:hover{border-color:var(--border-strong);color:var(--text)}
+.star-toggle.active{border-color:var(--star);color:var(--star);background:var(--star-bg)}
+
 .filter-clear{height:40px;padding:0 16px;font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;white-space:nowrap;transition:border-color var(--transition),color var(--transition);align-self:flex-end}
 .filter-clear:hover{border-color:var(--border-strong);color:var(--text)}
 
-/* Summary grid */
-.summary-grid{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:16px}
-.summary-outer{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:22px 26px;display:flex;flex-direction:column;justify-content:center}
-.summary-label{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.summary-big{font-family:var(--serif);font-size:60px;font-weight:300;line-height:1;color:var(--text)}
-.summary-sub{font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
-.summary-fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
-.field-stat{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius);padding:12px 14px;cursor:pointer;
-  transition:border-color var(--transition),background var(--transition);
-  user-select:none;
-}
+/* Summary */
+.summary-grid{display:grid;grid-template-columns:220px 1fr;gap:12px;margin-bottom:16px}
+.summary-outer{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.summary-block{}
+.summary-label{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.summary-big{font-family:var(--serif);font-size:52px;font-weight:300;line-height:1;color:var(--text)}
+.summary-big-star{font-family:var(--serif);font-size:52px;font-weight:300;line-height:1;color:var(--star)}
+.summary-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+.summary-divider{height:1px;background:var(--border);margin:0 -24px}
+
+/* Four S block */
+.four-s-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+.four-s-title{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.four-s-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.four-s-label{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.four-s-nums{display:flex;align-items:baseline;gap:8px}
+.four-s-num{font-family:var(--serif);font-size:28px;font-weight:300;color:var(--text);line-height:1}
+.four-s-star-num{font-family:var(--serif);font-size:20px;font-weight:300;color:var(--star);line-height:1}
+
+/* Right side: field stat tiles */
+.summary-right{display:flex;flex-direction:column;gap:12px}
+.summary-fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.field-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;cursor:pointer;transition:border-color var(--transition),background var(--transition);user-select:none}
 .field-stat:hover{border-color:var(--border-strong);background:var(--tag-bg)}
 .field-stat.active{border-color:var(--accent);background:var(--tag-bg)}
-.field-stat-num{font-family:var(--serif);font-size:28px;font-weight:300;line-height:1;color:var(--text);margin-bottom:4px}
+.field-stat-num{font-family:var(--serif);font-size:26px;font-weight:300;line-height:1;color:var(--text);margin-bottom:3px}
 .field-stat-label{font-size:10px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);line-height:1.3}
 
 /* Results */
-.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px}
 .results-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .results-list{display:flex;flex-direction:column;gap:8px}
 .result-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;animation:slide-in 200ms ease both}
 @keyframes slide-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.result-item.is-star{border-color:var(--star-border)}
 .result-head{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);background:var(--surface2);gap:10px;flex-wrap:wrap}
 .result-name{font-size:14px;font-weight:500;color:var(--text);flex:1;min-width:0}
+.result-name .star-badge{color:var(--star);font-size:12px;margin-right:4px}
 .result-meta{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
 .stage-pill{background:var(--tag-bg);border:1px solid var(--border);border-radius:100px;padding:2px 10px;color:var(--text);font-size:10px;font-family:var(--mono)}
 .result-link{font-family:var(--mono);font-size:10px;color:var(--muted);text-decoration:none;letter-spacing:0.04em;white-space:nowrap}
@@ -97,20 +154,12 @@ select option{background:var(--surface2);color:var(--text)}
 .all-good-block{display:flex;align-items:center;gap:12px;padding:18px 22px;background:var(--success-bg);border:1px solid var(--success-border);border-radius:var(--radius);color:var(--success-text);font-size:14px;font-weight:500}
 .error-block{padding:18px 22px;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius);color:var(--danger-text);font-size:14px}
 .error-block strong{font-weight:500;display:block;margin-bottom:4px}
-
-/* Coming soon */
 .coming-soon{text-align:center;padding:60px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg)}
 .coming-soon-icon{font-size:36px;margin-bottom:16px}
 .coming-soon p{font-size:13px;color:var(--muted);font-family:var(--mono);margin-top:8px}
 .coming-soon-title{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
-
-/* Footer */
 footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;display:flex;justify-content:space-between;opacity:0.5}
-
-@media(max-width:640px){
-  .summary-grid{grid-template-columns:1fr}
-  .filter-bar{flex-direction:column}
-}
+@media(max-width:700px){.summary-grid{grid-template-columns:1fr}.filter-bar{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -129,37 +178,40 @@ footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-
     </button>
   </div>
 
-  <!-- DEALS -->
   <div id="panel-deals">
     <div class="filter-bar">
       <div class="filter-group">
-        <label for="filter-owner">Owner</label>
-        <select id="filter-owner" onchange="renderResults()">
-          <option value="">All owners</option>
-          <option>Amy</option><option>Fady</option><option>Matt</option>
-          <option>Myron</option><option>Merryn</option><option value="Other">Other</option>
-        </select>
+        <label>Owner</label>
+        <div class="multi-select" id="ms-owner">
+          <div class="multi-select-trigger" onclick="toggleDropdown('ms-owner')">
+            <span class="multi-select-trigger-text" id="ms-owner-label">All owners</span>
+            <span class="multi-select-arrow">&#9660;</span>
+          </div>
+          <div class="multi-select-dropdown hidden" id="ms-owner-dropdown"></div>
+        </div>
       </div>
       <div class="filter-group">
-        <label for="filter-stage">Stage</label>
-        <select id="filter-stage" onchange="renderResults()">
-          <option value="">All stages</option>
-          <option value="54">Qualified</option>
-          <option value="55">Demo Booked</option>
-          <option value="58">Demo Done</option>
-          <option value="56">S Proposal Made (Slow)</option>
-          <option value="59">F Proposal Made (Fast)</option>
-          <option value="57">Negotiation</option>
-          <option value="60">Awaiting Contract</option>
-        </select>
+        <label>Stage</label>
+        <div class="multi-select" id="ms-stage">
+          <div class="multi-select-trigger" onclick="toggleDropdown('ms-stage')">
+            <span class="multi-select-trigger-text" id="ms-stage-label">All stages</span>
+            <span class="multi-select-arrow">&#9660;</span>
+          </div>
+          <div class="multi-select-dropdown hidden" id="ms-stage-dropdown"></div>
+        </div>
       </div>
-      <button class="filter-clear" onclick="clearFilters()">Clear filters</button>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="star-toggle" id="star-toggle-btn" onclick="toggleStarFilter()" style="width:100%">&#9733; STAR deals only</button>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="filter-clear" onclick="clearFilters()" style="width:100%">Clear filters</button>
+      </div>
     </div>
+
     <div id="pd-summary"></div>
     <div id="pd-results"></div>
   </div>
 
-  <!-- LEADS -->
   <div id="panel-leads" style="display:none">
     <div class="coming-soon">
       <div class="coming-soon-icon">🧩</div>
@@ -177,24 +229,33 @@ footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-
 var PD_TOKEN    = '61d3d6dd5ff041a05ffc62b30b5ea05442382c93';
 var PD_PIPELINE = 11;
 
-var STAGES = {54:'Qualified',55:'Demo Booked',58:'Demo Done',56:'S Proposal Made (Slow)',59:'F Proposal Made (Fast)',57:'Negotiation',60:'Awaiting Contract'};
-var KNOWN_OWNERS = ['Amy','Fady','Matt','Myron','Merryn'];
+var STAGES = {
+  54:'Qualified', 55:'Demo Booked', 58:'Demo Done',
+  56:'S Proposal Made (Slow)', 59:'F Proposal Made (Fast)',
+  57:'Negotiation', 60:'Awaiting Contract'
+};
+var OWNER_OPTIONS = ['Amy','Fady','Matt','Myron','Merryn','Other'];
+var STAGE_OPTIONS = Object.keys(STAGES).map(function(id){return {id:String(id),name:STAGES[id]};});
 
 var CHECKS = [
-  {label:'Size',       key:'55316164ecec27deb69e66cdd1ea1b908f75514a'},
-  {label:'Struggles',  key:'acfda2844d0b596f52ce91899dde7e6e4fd38370'},
-  {label:'Softwares',  key:'1ae94f5f8fe79a6a2758337bb1a20fc403cacd68'},
-  {label:'Spend',      key:'e10ada8a74aa70a16348bf7a4b4284981dad5d7a'},
-  {label:'Use Case',   key:'c10eafd6c05529546e9a2c0c47201da22d9e9636'},
+  {label:'Size',            key:'55316164ecec27deb69e66cdd1ea1b908f75514a'},
+  {label:'Struggles',       key:'acfda2844d0b596f52ce91899dde7e6e4fd38370'},
+  {label:'Softwares',       key:'1ae94f5f8fe79a6a2758337bb1a20fc403cacd68'},
+  {label:'Spend',           key:'e10ada8a74aa70a16348bf7a4b4284981dad5d7a'},
+  {label:'Use Case',        key:'c10eafd6c05529546e9a2c0c47201da22d9e9636'},
   {label:'Decision Makers', key:'4595486f60214eb50fb7505801099be717a52f31'},
-  {label:'Budget',     key:'ccebf09951eb26465211998ecdfe5b7a30abef13'},
-  {label:'Competitors',key:'e3f3dad7e208d601384a087c9ff83de3f1c07370'},
-  {label:'Objections', key:'5bda8cb706195ea83dc54627b39c98df8496bc52'},
-  {label:'Website',    key:'website'}
+  {label:'Budget',          key:'ccebf09951eb26465211998ecdfe5b7a30abef13'},
+  {label:'Competitors',     key:'e3f3dad7e208d601384a087c9ff83de3f1c07370'},
+  {label:'Objections',      key:'5bda8cb706195ea83dc54627b39c98df8496bc52'},
+  {label:'Website',         key:'website'}
 ];
+var FOUR_S = ['Size','Struggles','Softwares','Spend'];
 
-var allDeals     = [];
-var activeField  = null; // label of field-stat filter, or null
+var allDeals    = [];
+var activeField = null;
+var starOnly    = false;
+var selOwners   = [];
+var selStages   = [];
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function isEmpty(v){
@@ -203,6 +264,7 @@ function isEmpty(v){
   if(Array.isArray(v)&&v.length===0)return true;
   return false;
 }
+function isStar(d){return d.title&&d.title.indexOf('***')!==-1;}
 
 function switchTab(tab){
   document.getElementById('panel-deals').style.display=tab==='deals'?'block':'none';
@@ -211,11 +273,82 @@ function switchTab(tab){
   document.getElementById('tab-leads').classList.toggle('active',tab==='leads');
 }
 
+/* ── Multi-select ────────────────────────────────────────────────── */
+function initMultiSelect(id, options, isStage){
+  var dd = document.getElementById(id+'-dropdown');
+  options.forEach(function(opt){
+    var val   = isStage ? opt.id : opt;
+    var label = isStage ? opt.name : opt;
+    var el = document.createElement('div');
+    el.className = 'multi-option';
+    el.dataset.val = val;
+    el.innerHTML = '<span class="multi-checkbox"></span><span>'+esc(label)+'</span>';
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      toggleOption(id, val, isStage);
+    });
+    dd.appendChild(el);
+  });
+}
+
+function toggleDropdown(id){
+  var dd = document.getElementById(id+'-dropdown');
+  dd.classList.toggle('hidden');
+  document.getElementById(id).querySelector('.multi-select-trigger').classList.toggle('open', !dd.classList.contains('hidden'));
+}
+
+document.addEventListener('click', function(e){
+  ['ms-owner','ms-stage'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && !el.contains(e.target)){
+      document.getElementById(id+'-dropdown').classList.add('hidden');
+      el.querySelector('.multi-select-trigger').classList.remove('open');
+    }
+  });
+});
+
+function toggleOption(id, val, isStage){
+  var arr = isStage ? selStages : selOwners;
+  var idx = arr.indexOf(val);
+  if(idx===-1){arr.push(val);}else{arr.splice(idx,1);}
+  // sync checkboxes
+  var dd = document.getElementById(id+'-dropdown');
+  dd.querySelectorAll('.multi-option').forEach(function(el){
+    var sel = arr.indexOf(el.dataset.val)!==-1;
+    el.classList.toggle('selected', sel);
+    el.querySelector('.multi-checkbox').textContent = sel ? '✓' : '';
+  });
+  // update label
+  var labelEl = document.getElementById(id+'-label');
+  if(arr.length===0){
+    labelEl.textContent = isStage ? 'All stages' : 'All owners';
+  } else {
+    var names = isStage
+      ? arr.map(function(v){return STAGES[v]||v;})
+      : arr.slice();
+    labelEl.textContent = names.join(', ');
+  }
+  if(allDeals.length) renderResults();
+}
+
+function toggleStarFilter(){
+  starOnly = !starOnly;
+  document.getElementById('star-toggle-btn').classList.toggle('active', starOnly);
+  if(allDeals.length) renderResults();
+}
+
 function clearFilters(){
-  document.getElementById('filter-owner').value='';
-  document.getElementById('filter-stage').value='';
-  activeField=null;
-  renderResults();
+  selOwners=[];selStages=[];starOnly=false;activeField=null;
+  ['ms-owner','ms-stage'].forEach(function(id){
+    var isStage = id==='ms-stage';
+    document.getElementById(id+'-dropdown').querySelectorAll('.multi-option').forEach(function(el){
+      el.classList.remove('selected');
+      el.querySelector('.multi-checkbox').textContent='';
+    });
+    document.getElementById(id+'-label').textContent = isStage?'All stages':'All owners';
+  });
+  document.getElementById('star-toggle-btn').classList.remove('active');
+  if(allDeals.length) renderResults();
 }
 
 function toggleFieldFilter(label){
@@ -223,12 +356,13 @@ function toggleFieldFilter(label){
   renderResults();
 }
 
+/* ── Fetch ───────────────────────────────────────────────────────── */
 async function loadDeals(){
   document.getElementById('pd-summary').innerHTML='';
   document.getElementById('pd-results').innerHTML=
     '<div class="state-block"><div class="loader">'+
     '<div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>'+
-    '</div><p>Fetching deals…</p></div>';
+    '</div><p>Fetching deals\u2026</p></div>';
   try{
     allDeals=[];
     var start=0,more=true;
@@ -249,51 +383,64 @@ async function loadDeals(){
   }
 }
 
+/* ── Filter ──────────────────────────────────────────────────────── */
+function KNOWN_OWNERS(){return ['Amy','Fady','Matt','Myron','Merryn'];}
+
 function applyFilters(){
-  var ownerFilter=document.getElementById('filter-owner').value;
-  var stageFilter=document.getElementById('filter-stage').value;
   return allDeals.filter(function(d){
-    if(ownerFilter){
+    if(selOwners.length){
       var name=(d.owner_name||(d.user_id&&d.user_id.name)||'Unknown');
       var first=name.split(' ')[0];
-      if(ownerFilter==='Other'){if(KNOWN_OWNERS.indexOf(first)!==-1)return false;}
-      else{if(first!==ownerFilter)return false;}
+      var matchKnown = selOwners.indexOf(first)!==-1;
+      var matchOther = selOwners.indexOf('Other')!==-1 && KNOWN_OWNERS().indexOf(first)===-1;
+      if(!matchKnown && !matchOther) return false;
     }
-    if(stageFilter&&String(d.stage_id)!==String(stageFilter))return false;
+    if(selStages.length&&selStages.indexOf(String(d.stage_id))===-1)return false;
+    if(starOnly&&!isStar(d))return false;
     return true;
   });
 }
 
+/* ── Render ──────────────────────────────────────────────────────── */
 function renderResults(){
   if(!allDeals.length)return;
-  var filtered=applyFilters();
+  var filtered = applyFilters();
 
-  // Count per field across all filtered deals
+  // Per-field counts across filtered
   var counts={};
   CHECKS.forEach(function(c){
     counts[c.label]=filtered.filter(function(d){return isEmpty(d[c.key]);}).length;
   });
 
-  // Flagged = has at least one empty field
-  var flagged=filtered.filter(function(d){
-    return CHECKS.some(function(c){return isEmpty(d[c.key]);});
+  // Flagged = at least one empty field
+  var flagged     = filtered.filter(function(d){return CHECKS.some(function(c){return isEmpty(d[c.key]);});});
+  var flaggedStar = flagged.filter(isStar);
+
+  // Four-S counts
+  var fourSChecks = CHECKS.filter(function(c){return FOUR_S.indexOf(c.label)!==-1;});
+  var fourSAll    = filtered.filter(function(d){return fourSChecks.some(function(c){return isEmpty(d[c.key]);});}).length;
+  var fourSStar   = filtered.filter(function(d){return isStar(d)&&fourSChecks.some(function(c){return isEmpty(d[c.key]);});}).length;
+  var totalStar   = filtered.filter(isStar).length;
+
+  // Field-filter narrowing
+  var displayed = activeField
+    ? flagged.filter(function(d){
+        var c=CHECKS.find(function(c){return c.label===activeField;});
+        return c&&isEmpty(d[c.key]);
+      })
+    : flagged;
+
+  // Sort alphabetically
+  displayed = displayed.slice().sort(function(a,b){
+    return (a.title||'').localeCompare(b.title||'');
   });
 
-  // If a field filter is active, narrow further
-  var displayed=flagged;
-  if(activeField){
-    displayed=flagged.filter(function(d){
-      var check=CHECKS.find(function(c){return c.label===activeField;});
-      return check&&isEmpty(d[check.key]);
-    });
-  }
-
-  // ── Summary ──────────────────────────────────────────────────────
+  /* ── Summary block ── */
   var fieldCards='';
   CHECKS.forEach(function(c){
-    var isActive=activeField===c.label;
+    var isAct=activeField===c.label;
     fieldCards+=
-      '<div class="field-stat'+(isActive?' active':'')+'" onclick="toggleFieldFilter(\''+c.label+'\')">'+ 
+      '<div class="field-stat'+(isAct?' active':'')+'" onclick="toggleFieldFilter(\''+c.label+'\')">'+
       '<div class="field-stat-num">'+counts[c.label]+'</div>'+
       '<div class="field-stat-label">'+esc(c.label)+'</div>'+
       '</div>';
@@ -302,14 +449,36 @@ function renderResults(){
   document.getElementById('pd-summary').innerHTML=
     '<div class="summary-grid">'+
     '<div class="summary-outer">'+
-      '<div class="summary-label">'+(activeField?'Filtered: '+esc(activeField):'Deals with missing data')+'</div>'+
-      '<div class="summary-big">'+displayed.length+'</div>'+
-      '<div class="summary-sub">of '+filtered.length+' deals in scope</div>'+
+      '<div class="summary-block">'+
+        '<div class="summary-label">'+(activeField?'Filtered: '+esc(activeField):'All deals — missing data')+'</div>'+
+        '<div class="summary-big">'+flagged.length+'</div>'+
+        '<div class="summary-sub">of '+filtered.length+' in scope</div>'+
+      '</div>'+
+      '<div class="summary-divider"></div>'+
+      '<div class="summary-block">'+
+        '<div class="summary-label">STAR deals — missing data</div>'+
+        '<div class="summary-big-star">'+flaggedStar.length+'</div>'+
+        '<div class="summary-sub">of '+totalStar+' STAR deals</div>'+
+      '</div>'+
+      '<div class="summary-divider"></div>'+
+      '<div class="four-s-block" style="margin:-20px -24px -20px;border:none;border-top:1px solid var(--border);border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:16px 24px">'+
+        '<div class="four-s-title">Four S fields</div>'+
+        '<div class="four-s-row">'+
+          '<span class="four-s-label">All deals</span>'+
+          '<div class="four-s-nums"><span class="four-s-num">'+fourSAll+'</span></div>'+
+        '</div>'+
+        '<div class="four-s-row">'+
+          '<span class="four-s-label">STAR deals</span>'+
+          '<div class="four-s-nums"><span class="four-s-star-num">'+fourSStar+'</span></div>'+
+        '</div>'+
+      '</div>'+
     '</div>'+
-    '<div class="summary-fields-grid">'+fieldCards+'</div>'+
+    '<div class="summary-right">'+
+      '<div class="summary-fields-grid">'+fieldCards+'</div>'+
+    '</div>'+
     '</div>';
 
-  // ── Results list ─────────────────────────────────────────────────
+  /* ── Results list ── */
   var resultsEl=document.getElementById('pd-results');
   if(!displayed.length){
     resultsEl.innerHTML=
@@ -321,8 +490,9 @@ function renderResults(){
     return;
   }
 
-  var out='<div class="results-header">'+
-    '<span class="results-count">'+displayed.length+' deal'+(displayed.length===1?'':' s')+'</span>'+
+  var out=
+    '<div class="results-header">'+
+    '<span class="results-count">'+displayed.length+' deal'+(displayed.length===1?'':'s')+'</span>'+
     (activeField?'<button class="filter-clear" onclick="toggleFieldFilter(\''+activeField+'\')">Clear field filter</button>':'')+
     '</div>'+
     '<div class="results-list">';
@@ -330,15 +500,17 @@ function renderResults(){
   displayed.forEach(function(d,i){
     var ownerName=d.owner_name||(d.user_id&&d.user_id.name)||'Unknown';
     var stageName=STAGES[d.stage_id]||('Stage '+d.stage_id);
+    var star=isStar(d);
     var issues=CHECKS.filter(function(c){return isEmpty(d[c.key]);}).map(function(c){return c.label;});
+    var displayTitle = star ? d.title.replace('***','').trim() : d.title;
     out+=
-      '<div class="result-item" style="animation-delay:'+Math.min(i*15,400)+'ms">'+
+      '<div class="result-item'+(star?' is-star':'')+'" style="animation-delay:'+Math.min(i*12,400)+'ms">'+
       '<div class="result-head">'+
-        '<span class="result-name">'+esc(d.title)+'</span>'+
+        '<span class="result-name">'+(star?'<span class="star-badge">&#9733;</span>':'')+esc(displayTitle)+'</span>'+
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
           '<span class="result-meta">'+esc(ownerName)+'</span>'+
           '<span class="stage-pill">'+esc(stageName)+'</span>'+
-          '<a class="result-link" href="https://app.pipedrive.com/deal/'+d.id+'" target="_blank">↗ open</a>'+
+          '<a class="result-link" href="https://app.pipedrive.com/deal/'+d.id+'" target="_blank">\u2197 open</a>'+
         '</div>'+
       '</div>'+
       '<div class="missing-fields">';
@@ -351,7 +523,11 @@ function renderResults(){
   resultsEl.innerHTML=out;
 }
 
-document.addEventListener('DOMContentLoaded',loadDeals);
+(function init(){
+  initMultiSelect('ms-owner', OWNER_OPTIONS, false);
+  initMultiSelect('ms-stage', STAGE_OPTIONS, true);
+  loadDeals();
+})();
 </script>
 </body>
 </html>
