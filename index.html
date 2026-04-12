@@ -179,6 +179,9 @@ header p{margin-top:6px;font-size:13px;font-weight:300;color:var(--muted);line-h
 .coming-soon-icon{font-size:36px;margin-bottom:16px}
 .coming-soon p{font-size:13px;color:var(--muted);font-family:var(--mono);margin-top:8px}
 .coming-soon-title{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+.info-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:10px;cursor:default;vertical-align:middle;margin-left:5px;font-family:var(--mono);flex-shrink:0}
+.info-btn .info-tooltip{position:absolute;bottom:calc(100% + 6px);right:0;z-index:300;background:var(--surface);border:1px solid var(--bs);border-radius:var(--radius);padding:10px 12px;width:220px;font-size:11px;font-family:var(--sans);color:var(--muted);line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:none;pointer-events:none}
+.info-btn:hover .info-tooltip{display:block}
 footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;display:flex;justify-content:space-between;opacity:0.5}
 @media(max-width:700px){.summary-grid,.insights-row{grid-template-columns:1fr}.filter-bar{grid-template-columns:1fr}}
 </style>
@@ -436,6 +439,9 @@ async function loadDeals(){
       start+=500;
     }
     await wf;
+    // Restrict website filter to only deals actually in the main pipeline
+    var pipelineIds=new Set(allDeals.map(function(d){return d.id;}));
+    websiteFilterIds.forEach(function(id){if(!pipelineIds.has(id))websiteFilterIds.delete(id);});
     var now=new Date();
     document.getElementById('last-updated').textContent='Updated '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     renderResults();
@@ -474,11 +480,12 @@ function renderPie(deals){
 }
 
 /* ── Insights ── */
-function renderInsights(filtered,flagged){
-  /* Leaderboard: % of each owner's deals that are flagged */
+function renderInsights(filtered,flagged,displayed){
+  /* Leaderboard: % of each owner's deals that are incomplete (uses displayed when field filter active) */
+  var lbSource=displayed;
   var ownerTotal={},ownerFlagged={};
   filtered.forEach(function(d){var o=ownerFirst(d);ownerTotal[o]=(ownerTotal[o]||0)+1;});
-  flagged.forEach(function(d){var o=ownerFirst(d);ownerFlagged[o]=(ownerFlagged[o]||0)+1;});
+  lbSource.forEach(function(d){var o=ownerFirst(d);ownerFlagged[o]=(ownerFlagged[o]||0)+1;});
   var owners=Object.keys(ownerTotal).sort(function(a,b){
     var pa=(ownerFlagged[a]||0)/ownerTotal[a];
     var pb=(ownerFlagged[b]||0)/ownerTotal[b];
@@ -497,10 +504,11 @@ function renderInsights(filtered,flagged){
       '</div>';
   });
 
-  /* Stage heatmap */
+  /* Stage heatmap: uses displayed when field filter active */
+  var hmSource=displayed;
   var stageTotal={},stageFlagged={};
   filtered.forEach(function(d){var s=String(d.stage_id);stageTotal[s]=(stageTotal[s]||0)+1;});
-  flagged.forEach(function(d){var s=String(d.stage_id);stageFlagged[s]=(stageFlagged[s]||0)+1;});
+  hmSource.forEach(function(d){var s=String(d.stage_id);stageFlagged[s]=(stageFlagged[s]||0)+1;});
   var stageMaxPct=STAGE_ORDER.reduce(function(m,id){
     var s=String(id);
     return stageTotal[s]?Math.max(m,(stageFlagged[s]||0)/stageTotal[s]):m;
@@ -519,8 +527,8 @@ function renderInsights(filtered,flagged){
       '</div>';
   });
 
-  /* Most wanted: top 8 flagged deals by missing field count, then by value */
-  var wanted=flagged.slice().sort(function(a,b){
+  /* Most wanted: top 8 from displayed (respects field filter), by missing count then value */
+  var wanted=displayed.slice().sort(function(a,b){
     var md=missingCount(b)-missingCount(a);
     if(md!==0)return md;
     return (b.value||0)-(a.value||0);
@@ -541,9 +549,9 @@ function renderInsights(filtered,flagged){
 
   document.getElementById('pd-insights').innerHTML=
     '<div class="insights-row">'+
-    '<div class="insight-card"><div class="insight-title">Owner leaderboard</div>'+lbHtml+'</div>'+
-    '<div class="insight-card"><div class="insight-title">Stage heatmap</div>'+hmHtml+'</div>'+
-    '<div class="insight-card"><div class="insight-title">Most wanted</div>'+mwHtml+'</div>'+
+    '<div class="insight-card"><div class="insight-title">Owner leaderboard <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— higher = worse</span></div>'+lbHtml+'</div>'+
+    '<div class="insight-card"><div class="insight-title">Stage heatmap <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— % incomplete</span></div>'+hmHtml+'</div>'+
+    '<div class="insight-card"><div class="insight-title" style="display:flex;align-items:center;gap:5px">Most wanted<span class="info-btn">ⓘ<span class="info-tooltip">Ranked by number of missing fields (out of 10). Ties broken by deal value — higher value ranks first. Shows the top 8 deals most in need of attention.</span></span></div>'+mwHtml+'</div>'+
     '</div>';
 }
 
@@ -614,7 +622,7 @@ function renderResults(){
     '</div>';
 
   renderPie(displayed);
-  renderInsights(filtered,flagged);
+  renderInsights(filtered,flagged,displayed);
 
   /* Results */
   var el=document.getElementById('pd-results');
