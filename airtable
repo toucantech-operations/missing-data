@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Missing Data Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧩</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --radius: 6px; --radius-lg: 14px;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Jost', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --transition: 200ms ease;
+}
+:root {
+  --at-bg:#020D18; --at-surface:#061628; --at-surface2:#010810;
+  --at-border:#0A2840; --at-border-strong:#1060A0;
+  --at-text:#D0EEFF; --at-muted:#4A90C0;
+  --at-accent:#0EA8E0; --at-accent-fg:#001820; --at-glow:#40C8F8;
+  --at-tag-bg:#071E34;
+  --at-danger-bg:#100818; --at-danger-border:#3A1848; --at-danger-text:#C080F0;
+  --at-success-bg:#021420; --at-success-border:#0A4868; --at-success-text:#40C0E8;
+}
+:root {
+  --pd-bg:#041C18; --pd-surface:#072820; --pd-surface2:#021210;
+  --pd-border:#0C4030; --pd-border-strong:#186850;
+  --pd-text:#D8FFE8; --pd-muted:#50B888;
+  --pd-accent:#C8C000; --pd-accent-fg:#101000; --pd-glow:#40E8C0;
+  --pd-tag-bg:#0A3828;
+  --pd-danger-bg:#201800; --pd-danger-border:#604800; --pd-danger-text:#E8C040;
+  --pd-success-bg:#041C10; --pd-success-border:#107040; --pd-success-text:#40E090;
+}
+html { font-size: 16px; }
+body {
+  font-family: var(--sans); font-weight: 400; min-height: 100vh;
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+body.theme-at {
+  background: var(--at-bg); color: var(--at-text);
+  --bg:var(--at-bg); --surface:var(--at-surface); --surface2:var(--at-surface2);
+  --border:var(--at-border); --border-strong:var(--at-border-strong);
+  --text:var(--at-text); --muted:var(--at-muted);
+  --accent:var(--at-accent); --accent-fg:var(--at-accent-fg); --glow:var(--at-glow);
+  --tag-bg:var(--at-tag-bg);
+  --danger-bg:var(--at-danger-bg); --danger-border:var(--at-danger-border); --danger-text:var(--at-danger-text);
+  --success-bg:var(--at-success-bg); --success-border:var(--at-success-border); --success-text:var(--at-success-text);
+}
+body.theme-pd {
+  background: var(--pd-bg); color: var(--pd-text);
+  --bg:var(--pd-bg); --surface:var(--pd-surface); --surface2:var(--pd-surface2);
+  --border:var(--pd-border); --border-strong:var(--pd-border-strong);
+  --text:var(--pd-text); --muted:var(--pd-muted);
+  --accent:var(--pd-accent); --accent-fg:var(--pd-accent-fg); --glow:var(--pd-glow);
+  --tag-bg:var(--pd-tag-bg);
+  --danger-bg:var(--pd-danger-bg); --danger-border:var(--pd-danger-border); --danger-text:var(--pd-danger-text);
+  --success-bg:var(--pd-success-bg); --success-border:var(--pd-success-border); --success-text:var(--pd-success-text);
+}
+.shell { max-width: 860px; margin: 0 auto; padding: 0 28px 80px; }
+header {
+  position: relative; padding: 60px 0 44px;
+  border-bottom: 1px solid var(--border); overflow: hidden;
+}
+.header-glow {
+  position: absolute; top: -60px; right: -80px;
+  width: 420px; height: 420px; border-radius: 50%;
+  background: var(--glow); opacity: 0.08; filter: blur(100px);
+  pointer-events: none; transition: background 0.5s ease;
+}
+.header-glow-2 {
+  position: absolute; bottom: -40px; left: -60px;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: var(--accent); opacity: 0.06; filter: blur(80px);
+  pointer-events: none; transition: background 0.5s ease;
+}
+.header-eyebrow {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+header h1 {
+  font-family: var(--serif); font-size: clamp(36px,6vw,56px);
+  font-weight: 300; line-height: 1.06; letter-spacing: -0.01em; color: var(--text);
+}
+header h1 em { font-style: italic; font-weight: 300; opacity: 0.45; }
+header p { margin-top: 14px; font-size: 14px; font-weight: 300; color: var(--muted); max-width: 460px; line-height: 1.8; }
+.tabs { display: flex; margin-bottom: 36px; border-bottom: 1px solid var(--border); }
+.tab-btn {
+  display: flex; align-items: center; gap: 9px; padding: 14px 22px;
+  font-family: var(--sans); font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
+  color: var(--muted); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  transition: color var(--transition); margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-orb { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: box-shadow var(--transition); }
+.tab-orb-at { background: var(--at-glow); }
+.tab-btn.active .tab-orb-at { box-shadow: 0 0 10px var(--at-glow); }
+.tab-orb-pd { background: var(--pd-glow); }
+.tab-btn.active .tab-orb-pd { box-shadow: 0 0 10px var(--pd-glow); }
+.panel { display: none; }
+.panel.active { display: block; animation: fade-up 240ms ease; }
+@keyframes fade-up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.criteria-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px;
+}
+.criteria-card-title {
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+.criteria-filter { font-size: 12px; color: var(--muted); margin-bottom: 12px; font-family: var(--mono); line-height: 1.6; }
+.criteria-filter span {
+  color: var(--text); background: var(--tag-bg);
+  border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px; font-size: 11px;
+}
+.criteria-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.criteria-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--tag-bg); border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--text);
+}
+.criteria-pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); opacity: 0.7; }
+.criteria-pill.has-note { border-color: var(--border-strong); }
+.criteria-note { font-size: 10px; color: var(--muted); font-style: italic; margin-left: 2px; }
+.run-btn {
+  width: 100%; height: 50px; font-family: var(--sans); font-size: 14px;
+  font-weight: 500; letter-spacing: 0.06em; color: var(--accent-fg);
+  background: var(--accent); border: none; border-radius: var(--radius);
+  cursor: pointer; transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+.run-btn:hover { opacity: 0.88; box-shadow: 0 6px 28px color-mix(in srgb, var(--glow) 50%, transparent); }
+.run-btn:active { transform: scale(0.99); }
+.run-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
+.debug-btn {
+  margin-top: 10px; width: 100%; height: 36px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  color: var(--muted); background: none;
+  border: 1px dashed var(--border); border-radius: var(--radius); cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.debug-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.stats-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 28px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.stat-value { font-family: var(--serif); font-size: 38px; font-weight: 300; line-height: 1; color: var(--text); margin-bottom: 5px; }
+.stat-label { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; color: var(--muted); text-transform: uppercase; }
+.results-list { display: flex; flex-direction: column; gap: 10px; }
+.result-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; animation: slide-in 220ms ease both;
+}
+@keyframes slide-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.result-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.result-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.result-link { font-family: var(--mono); font-size: 10px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; }
+.result-link:hover { color: var(--accent); }
+.missing-fields { display: flex; flex-wrap: wrap; gap: 7px; padding: 14px 18px; }
+.missing-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: 100px; padding: 4px 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--danger-text);
+}
+.missing-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--danger-text); opacity: 0.6; }
+.state-block { padding: 52px 0; text-align: center; }
+.state-block p { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 14px; }
+.loader { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.loader-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--glow); animation: bounce 1.2s infinite ease; box-shadow: 0 0 8px var(--glow); }
+.loader-dot:nth-child(2) { animation-delay: 0.15s; }
+.loader-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%,80%,100% { transform:scale(0.4); opacity:0.2; } 40% { transform:scale(1); opacity:1; } }
+.all-good-block {
+  display: flex; align-items: center; gap: 12px; padding: 18px 22px;
+  background: var(--success-bg); border: 1px solid var(--success-border);
+  border-radius: var(--radius); color: var(--success-text); font-size: 14px; font-weight: 500;
+}
+.error-block {
+  padding: 18px 22px; background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: var(--radius); color: var(--danger-text); font-size: 14px;
+}
+.error-block strong { font-weight: 500; display: block; margin-bottom: 4px; }
+.debug-table { width: 100%; border-collapse: collapse; }
+.debug-table td { padding: 4px 10px 4px 0; font-family: var(--mono); font-size: 11px; vertical-align: top; }
+.debug-table td:first-child { white-space: nowrap; padding-right: 16px; }
+.debug-table td:last-child { color: var(--muted); word-break: break-all; }
+.debug-table tr.match td:first-child { color: var(--accent); }
+footer {
+  margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  letter-spacing: 0.06em; display: flex; justify-content: space-between; opacity: 0.5;
+}
+@media (max-width:540px) {
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .stats-bar .stat-card:last-child { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body class="theme-at">
+<div class="shell">
+  <header>
+    <div class="header-glow"></div>
+    <div class="header-glow-2"></div>
+    <div class="header-eyebrow">Internal Tool</div>
+    <h1>Missing Data<br /><em>Dashboard</em></h1>
+    <p>Flags records with incomplete required fields based on pre-configured rules.</p>
+  </header>
+  <div style="height:1px"></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('at')" id="tab-at">
+      <span class="tab-orb tab-orb-at"></span>Airtable
+    </button>
+    <button class="tab-btn" onclick="switchTab('pd')" id="tab-pd">
+      <span class="tab-orb tab-orb-pd"></span>Pipedrive
+    </button>
+  </div>
+
+  <div class="panel active" id="panel-at">
+    <div class="criteria-card">
+      <div class="criteria-card-title">Checking rules</div>
+      <div class="criteria-filter">
+        Only flags records where <span>Status</span> = <span>Current</span> and <span>Site type</span> = <span>Main site</span>
+      </div>
+      <div class="criteria-list">
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Link to TT site</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Database</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Link to customer's main website</span>
+        <span class="criteria-pill has-note"><span class="criteria-pill-dot"></span>Sub-Sector <span class="criteria-note">empty or "Other"</span></span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Education Gender</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>UK Nations</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>US State (if applicable)</span>
+        <span class="criteria-pill"><span class="criteria-pill-dot"></span>Australian State</span>
+      </div>
+    </div>
+    <button class="run-btn" id="at-run" onclick="runAirtable()">Check records for missing data</button>
+    <div id="at-results" style="margin-top:32px;"></div>
+  </div>
+
+  <div class="panel" id="panel-pd">
+    <div class="criteria-card">
+      <div class="criteria-card-title">Checking rules</div>
+      <div class="criteria-filter" style="opacity:0.5;font-style:italic;">No rules configured yet.</div>
+    </div>
+    <button class="run-btn" id="pd-run" onclick="runPipedrive()">Check records for missing data</button>
+    <div id="pd-results" style="margin-top:32px;"></div>
+  </div>
+
+  <footer>
+    <span>Missing Data Dashboard</span>
+    <span>Credentials stored in this file only</span>
+  </footer>
+</div>
+<script>
+var AT_TOKEN = 'pat1PwwPI4ZVL72Eu.db5ff25fa6638fe6ccc3e1cf58f8ee85b587b8e9841f3662b25a05324c9a29ce';
+var AT_BASE  = 'appRsF7Zfa3iKjTFD';
+var AT_TABLE = 'Cust|Customers';
+var AT_TABLE_ID = 'tblzv9kEKvCAhN451';
+var AT_VIEW_ID  = 'viwL08s2fDUF4AIUX';
+var PD_TOKEN = '61d3d6dd5ff041a05ffc62b30b5ea05442382c93';
+
+var AT_GATE = { 'Status': 'Current', 'Site type': 'Main site' };
+
+var AT_CHECKS = [
+  { field: 'Link to TT site' },
+  { field: 'Database' },
+  { field: "Link to customer's main website" },
+  { field: 'Sub-Sector', also: ['Other'] },
+  { field: 'Education Gender' },
+  { field: 'UK Nations' },
+  { field: 'US State (if applicable)' },
+  { field: 'Australian State' }
+];
+
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  document.body.className = 'theme-' + id;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function isEmpty(v) {
+  if (v === undefined || v === null || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  if (typeof v === 'string' && v.trim() === '') return true;
+  return false;
+}
+
+function showLoading(elId) {
+  document.getElementById(elId).innerHTML =
+    '<div class="state-block"><div class="loader">' +
+    '<div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>' +
+    '</div><p>Fetching records\u2026</p></div>';
+}
+
+function showError(elId, msg) {
+  document.getElementById(elId).innerHTML =
+    '<div class="error-block"><strong>Something went wrong</strong>' + esc(msg) + '</div>';
+}
+
+function renderResults(elId, flagged, scoped, total) {
+  var pct = scoped > 0 ? Math.round((flagged.length / scoped) * 100) : 0;
+  var html =
+    '<div class="stats-bar">' +
+    '<div class="stat-card"><div class="stat-value">' + total + '</div><div class="stat-label">Total records</div></div>' +
+    '<div class="stat-card"><div class="stat-value">' + scoped + '</div><div class="stat-label">In scope</div></div>' +
+    '<div class="stat-card"><div class="stat-value">' + flagged.length + '</div><div class="stat-label">Flagged</div></div>' +
+    '</div>';
+
+  if (!flagged.length) {
+    html +=
+      '<div class="all-good-block">' +
+      '<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' +
+      'All ' + scoped + ' in-scope records are complete.</div>';
+  } else {
+    html += '<div class="results-list">';
+    flagged.forEach(function(rec, i) {
+      var delay = Math.min(i * 25, 400);
+      html +=
+        '<div class="result-item" style="animation-delay:' + delay + 'ms">' +
+        '<div class="result-head">' +
+        '<span class="result-name">' + esc(rec.name) + '</span>' +
+        (rec.url ? '<a class="result-link" href="' + esc(rec.url) + '" target="_blank">\u2197 open record</a>' : '') +
+        '</div><div class="missing-fields">';
+      rec.issues.forEach(function(issue) {
+        html += '<span class="missing-pill"><span class="missing-dot"></span>' + esc(issue) + '</span>';
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
+  document.getElementById(elId).innerHTML = html;
+}
+
+async function runAirtable() {
+  var btn = document.getElementById('at-run');
+  btn.disabled = true;
+  showLoading('at-results');
+  try {
+    var flagged = [];
+    var offset = '';
+    var total = 0;
+    var scoped = 0;
+    do {
+      var url = 'https://api.airtable.com/v0/' + encodeURIComponent(AT_BASE) + '/' + encodeURIComponent(AT_TABLE) +
+        '?pageSize=100' + (offset ? '&offset=' + encodeURIComponent(offset) : '');
+      var res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + AT_TOKEN } });
+      if (!res.ok) {
+        var e = await res.json().catch(function() { return {}; });
+        throw new Error((e.error && e.error.message) || ('HTTP ' + res.status));
+      }
+      var data = await res.json();
+      total += data.records.length;
+
+      data.records.forEach(function(rec) {
+        var f = rec.fields || {};
+
+        // Gate check
+        var gateKeys = Object.keys(AT_GATE);
+        for (var gi = 0; gi < gateKeys.length; gi++) {
+          if (f[gateKeys[gi]] !== AT_GATE[gateKeys[gi]]) return;
+        }
+        scoped++;
+
+        var issues = [];
+        AT_CHECKS.forEach(function(check) {
+          var val = f[check.field];
+          if (isEmpty(val)) {
+            issues.push(check.field + ' \u2014 missing');
+          } else if (check.also) {
+            var strVal = Array.isArray(val) ? val.join(', ') : String(val).trim();
+            if (check.also.indexOf(strVal) !== -1) {
+              issues.push(check.field + ' \u2014 "' + strVal + '"');
+            }
+          }
+        });
+
+        if (issues.length) {
+          var name = f['Name'] || f['Customer'] || f['Title'] || f['Company'];
+          if (!name) {
+            var vals = Object.values(f);
+            for (var vi = 0; vi < vals.length; vi++) {
+              if (typeof vals[vi] === 'string' && vals[vi].length > 1) { name = vals[vi]; break; }
+            }
+          }
+          flagged.push({
+            id: rec.id,
+            name: String(name || rec.id),
+            url: 'https://airtable.com/' + AT_BASE + '/' + AT_TABLE_ID + '/' + AT_VIEW_ID + '?focusedRecordId=' + rec.id,
+            issues: issues
+          });
+        }
+      });
+
+      offset = data.offset || '';
+    } while (offset);
+
+    renderResults('at-results', flagged, scoped, total);
+  } catch(err) {
+    showError('at-results', err.message);
+  }
+  btn.disabled = false;
+}
+
+
+async function runPipedrive() {
+  document.getElementById('pd-results').innerHTML =
+    '<div class="error-block"><strong>Not configured</strong>No field rules have been set for Pipedrive yet.</div>';
+}
+</script>
+</body>
+</html>
