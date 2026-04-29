@@ -208,7 +208,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--border);font-
       <span class="tab-orb"></span>Deals
     </button>
     <button class="tab-btn" onclick="switchTab('leads')" id="tab-leads">
-      <span class="tab-orb" style="opacity:0.35"></span>Leads<span class="tab-soon">coming soon</span>
+      <span class="tab-orb"></span>Leads
     </button>
   </div>
 
@@ -248,11 +248,21 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--border);font-
   </div>
 
   <div id="panel-leads" style="display:none">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🧩</div>
-      <div class="coming-soon-title">Coming soon</div>
-      <p>Leads missing data checks will be built here.</p>
+    <div class="filter-bar" style="grid-template-columns:1fr;">
+      <div class="filter-group">
+        <label>Owner</label>
+        <div class="multi-select" id="ms-lead-owner">
+          <div class="ms-trigger" onclick="toggleDropdown('ms-lead-owner')">
+            <span class="ms-trigger-text" id="ms-lead-owner-label">All owners</span>
+            <span class="ms-arrow">&#9660;</span>
+          </div>
+          <div class="ms-dropdown hidden" id="ms-lead-owner-dropdown"></div>
+        </div>
+      </div>
     </div>
+    <div id="lead-summary"></div>
+    <div id="lead-insights"></div>
+    <div id="lead-results"></div>
   </div>
 
   <footer>
@@ -282,9 +292,27 @@ var CHECKS = [
   {label:'Source (Attribution)',  key:'6bd83ae8d8f32627e17d8bb7028bbb52082245a8'}
 ];
 var KNOWN_OWNERS = ['Amy','Fady','Matt','Myron','Merryn'];
+
+var LEAD_CHECKS = [
+  {label:'Source (details)',      key:'bfedadd6c4e6c2e5af96384d7b5b2c4065737c69'},
+  {label:'Size',                  key:'55316164ecec27deb69e66cdd1ea1b908f75514a'},
+  {label:'Struggles',             key:'acfda2844d0b596f52ce91899dde7e6e4fd38370'},
+  {label:'Softwares',             key:'1ae94f5f8fe79a6a2758337bb1a20fc403cacd68'},
+  {label:'Spend',                 key:'e10ada8a74aa70a16348bf7a4b4284981dad5d7a'},
+  {label:'Use Case',              key:'c10eafd6c05529546e9a2c0c47201da22d9e9636'},
+  {label:'Decision Makers',       key:'4595486f60214eb50fb7505801099be717a52f31'},
+  {label:'Budget',                key:'ccebf09951eb26465211998ecdfe5b7a30abef13'},
+  {label:'Competitors',           key:'e3f3dad7e208d601384a087c9ff83de3f1c07370'},
+  {label:'Objections',            key:'5bda8cb706195ea83dc54627b39c98df8496bc52'},
+  {label:'Source (Attribution)',  key:'6bd83ae8d8f32627e17d8bb7028bbb52082245a8'}
+];
 var PIE_COLORS = {Amy:'#C060A0',Fady:'#C8C000',Matt:'#4A90C0',Myron:'#E07040',Merryn:'#B09FD8',Other:'#507850'};
 
 var allDeals         = [];
+var allLeads         = [];
+var leadActiveFields = [];
+var leadSelOwners    = [];
+var leadSortMode     = 'alpha';
 var websiteFilterIds = new Set();
 var activeFields     = [];
 var selOwners        = [];
@@ -311,6 +339,7 @@ function switchTab(tab){
   document.getElementById('panel-leads').style.display=tab==='leads'?'block':'none';
   document.getElementById('tab-deals').classList.toggle('active',tab==='deals');
   document.getElementById('tab-leads').classList.toggle('active',tab==='leads');
+  if(tab==='leads'&&allLeads.length===0) loadLeads();
 }
 
 /* ── Multi-select ── */
@@ -459,7 +488,10 @@ async function loadDeals(){
   rbtn.classList.remove('spinning');rbtn.disabled=false;
 }
 
-function refresh(){loadDeals();}
+function refresh(){
+  loadDeals();
+  if(allLeads.length>0) loadLeads();
+}
 
 /* ── Pie ── */
 function renderPie(deals){
@@ -689,8 +721,313 @@ function renderResults(){
 (function init(){
   initMultiSelect('ms-owner',OWNER_OPTIONS,false);
   initMultiSelect('ms-stage',STAGE_OPTIONS,true);
+  // Lead owner dropdown — uses its own handler
+  (function(){
+    var dd=document.getElementById('ms-lead-owner-dropdown');
+    OWNER_OPTIONS.forEach(function(opt){
+      var el=document.createElement('div');
+      el.className='ms-option';el.dataset.val=opt;
+      el.innerHTML='<span class="ms-cb"></span><span>'+esc(opt)+'</span>';
+      el.addEventListener('click',function(e){e.stopPropagation();toggleLeadOwner(opt);});
+      dd.appendChild(el);
+    });
+  })();
   loadDeals();
 })();
+/* ═══════════════════════════════════════════
+   LEADS
+═══════════════════════════════════════════ */
+
+function toggleLeadOwner(val){
+  var idx=leadSelOwners.indexOf(val);
+  if(idx===-1){leadSelOwners.push(val);}else{leadSelOwners.splice(idx,1);}
+  var dd=document.getElementById("ms-lead-owner-dropdown");
+  dd.querySelectorAll(".ms-option").forEach(function(el){
+    var sel=leadSelOwners.indexOf(el.dataset.val)!==-1;
+    el.classList.toggle("selected",sel);
+    el.querySelector(".ms-cb").textContent=sel?"✓":"";
+  });
+  var lel=document.getElementById("ms-lead-owner-label");
+  lel.textContent=leadSelOwners.length?leadSelOwners.join(", "):"All owners";
+  if(allLeads.length) renderLeads();
+}
+
+function clearLeadFilters(){
+  leadSelOwners=[];leadActiveFields=[];
+  var dd=document.getElementById("ms-lead-owner-dropdown");
+  dd.querySelectorAll(".ms-option").forEach(function(el){el.classList.remove("selected");el.querySelector(".ms-cb").textContent="";});
+  document.getElementById("ms-lead-owner-label").textContent="All owners";
+  if(allLeads.length) renderLeads();
+}
+
+function toggleLeadFieldFilter(label){
+  var idx=leadActiveFields.indexOf(label);
+  if(idx===-1){leadActiveFields.push(label);}else{leadActiveFields.splice(idx,1);}
+  renderLeads();
+}
+
+function setLeadSort(mode){
+  leadSortMode=mode;
+  document.querySelectorAll(".lead-sort-btn").forEach(function(b){b.classList.toggle("active",b.dataset.sort===mode);});
+  if(allLeads.length) renderLeads();
+}
+
+function leadOwnerFirst(l){
+  var n=(l.owner_id&&l.owner_id.name)||"Unknown";
+  var f=n.split(" ")[0];
+  return KNOWN_OWNERS.indexOf(f)!==-1?f:"Other";
+}
+
+function leadMissingCount(l){return LEAD_CHECKS.filter(function(c){return isEmpty(l[c.key]);}).length;}
+function leadCompletionPct(l){var m=leadMissingCount(l);return Math.round(((LEAD_CHECKS.length-m)/LEAD_CHECKS.length)*100);}
+
+function applyLeadFilters(){
+  return allLeads.filter(function(l){
+    if(leadSelOwners.length){
+      var f=leadOwnerFirst(l);
+      var matchKnown=leadSelOwners.indexOf(f)!==-1;
+      var matchOther=leadSelOwners.indexOf("Other")!==-1&&KNOWN_OWNERS.indexOf(f)===-1;
+      if(!matchKnown&&!matchOther) return false;
+    }
+    return true;
+  });
+}
+
+function sortLeads(arr){
+  return arr.slice().sort(function(a,b){
+    if(leadSortMode==="missing") return leadMissingCount(b)-leadMissingCount(a);
+    if(leadSortMode==="value") return ((b.deal_value&&b.deal_value.amount)||0)-((a.deal_value&&a.deal_value.amount)||0);
+    return (a.title||"").localeCompare(b.title||"");
+  });
+}
+
+async function loadLeads(){
+  document.getElementById("lead-summary").innerHTML="";
+  document.getElementById("lead-insights").innerHTML="";
+  document.getElementById("lead-results").innerHTML=
+    "<div class=\"state-block\"><div class=\"loader\">"+
+    "<div class=\"loader-dot\"></div><div class=\"loader-dot\"></div><div class=\"loader-dot\"></div>"+
+    "</div><p>Fetching leads…</p></div>";
+  try{
+    allLeads=[];
+    var start=0,more=true;
+    while(more){
+      var url="https://api.pipedrive.com/v1/leads?api_token="+PD_TOKEN+"&limit=500&start="+start;
+      var res=await fetch(url);var data=await res.json();
+      if(!data.success)throw new Error(data.error||"API error");
+      var items=(data.data||[]).filter(function(l){return !l.is_archived;});
+      allLeads=allLeads.concat(items);
+      more=!!(data.additional_data&&data.additional_data.pagination&&data.additional_data.pagination.more_items_in_collection);
+      start+=500;
+    }
+    renderLeads();
+  }catch(err){
+    document.getElementById("lead-results").innerHTML="<div class=\"error-block\"><strong>Something went wrong</strong>"+esc(err.message)+"</div>";
+  }
+}
+
+function renderLeads(){
+  if(!allLeads.length) return;
+  var filtered=applyLeadFilters();
+  var counts={};
+  LEAD_CHECKS.forEach(function(c){counts[c.label]=filtered.filter(function(l){return isEmpty(l[c.key]);}).length;});
+  var flagged=filtered.filter(function(l){return LEAD_CHECKS.some(function(c){return isEmpty(l[c.key]);});});
+  var displayed=leadActiveFields.length
+    ?flagged.filter(function(l){
+        return leadActiveFields.some(function(lbl){
+          var c=LEAD_CHECKS.find(function(c){return c.label===lbl;});
+          return c&&isEmpty(l[c.key]);
+        });
+      })
+    :flagged;
+  displayed=sortLeads(displayed);
+
+  // Field tiles
+  var fieldCards="";
+  LEAD_CHECKS.forEach(function(c){
+    var isAct=leadActiveFields.indexOf(c.label)!==-1;
+    var div=document.createElement("div");
+    div.className="field-stat"+(isAct?" active":"");
+    div.innerHTML="<div class=\"field-stat-num\">"+counts[c.label]+"</div><div class=\"field-stat-label\">"+esc(c.label)+"</div>";
+    div.addEventListener("click",function(){toggleLeadFieldFilter(c.label);});
+    fieldCards+=div.outerHTML;
+  });
+
+  // Pie html
+  var pieSectionHtml=
+    "<div class=\"pie-card\">"+
+      "<div class=\"pie-header\">"+
+        "<div class=\"pie-title\">Missing data by owner</div>"+
+        "<button class=\"pie-legend-btn\" id=\"lead-pie-legend-btn\">&#9432;"+
+          "<div class=\"pie-legend-popup\" id=\"lead-pie-legend\"></div>"+
+        "</button>"+
+      "</div>"+
+      "<div class=\"pie-wrap\"><canvas id=\"lead-pie-chart\"></canvas></div>"+
+    "</div>";
+
+  document.getElementById("lead-summary").innerHTML=
+    "<div class=\"summary-grid\">"+
+    "<div class=\"summary-outer\">"+
+      "<div>"+
+        "<div class=\"summary-label\">"+(leadActiveFields.length?"Filtered: "+leadActiveFields.map(esc).join(", "):"All leads — missing data")+"</div>"+
+        "<div class=\"summary-big\">"+(leadActiveFields.length?displayed.length:flagged.length)+"</div>"+
+        "<div class=\"summary-sub\">of "+filtered.length+" leads in scope</div>"+
+      "</div>"+
+    "</div>"+
+    "<div class=\"summary-right\"><div class=\"summary-fields-grid\" id=\"lead-field-tiles\"></div></div>"+
+    pieSectionHtml+
+    "</div>";
+
+  // Attach field tiles via DOM (avoids quote escaping)
+  var tilesContainer=document.getElementById("lead-field-tiles");
+  if(tilesContainer){
+    LEAD_CHECKS.forEach(function(c){
+      var isAct=leadActiveFields.indexOf(c.label)!==-1;
+      var div=document.createElement("div");
+      div.className="field-stat"+(isAct?" active":"");
+      div.innerHTML="<div class=\"field-stat-num\">"+counts[c.label]+"</div><div class=\"field-stat-label\">"+esc(c.label)+"</div>";
+      div.addEventListener("click",function(){toggleLeadFieldFilter(c.label);});
+      tilesContainer.appendChild(div);
+    });
+  }
+
+  // Wire up pie legend btn toggle
+  var plBtn=document.getElementById("lead-pie-legend-btn");
+  if(plBtn) plBtn.addEventListener("click",function(){this.classList.toggle("open");});
+
+  // Render lead pie
+  (function(){
+    var canvas=document.getElementById("lead-pie-chart");if(!canvas)return;
+    var pc={};
+    displayed.forEach(function(l){var o=leadOwnerFirst(l);pc[o]=(pc[o]||0)+1;});
+    var labels=Object.keys(pc).sort(function(a,b){return pc[b]-pc[a];});
+    if(!labels.length)return;
+    if(window.leadPieChart){window.leadPieChart.destroy();}
+    window.leadPieChart=new Chart(canvas,{
+      type:"doughnut",
+      data:{labels:labels,datasets:[{data:labels.map(function(l){return pc[l];}),backgroundColor:labels.map(function(l){return PIE_COLORS[l]||"#507850";}),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:true,cutout:"62%",plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return " "+ctx.label+": "+ctx.raw+" leads";}},backgroundColor:"#072820",borderColor:"#186850",borderWidth:1,titleColor:"#D8FFE8",bodyColor:"#50B888",padding:10}}}
+    });
+    var leg=document.getElementById("lead-pie-legend");
+    if(leg) leg.innerHTML=labels.map(function(l){return "<div class=\"pie-legend-item\"><span class=\"pie-legend-dot\" style=\"background:"+(PIE_COLORS[l]||"#507850")+"\"></span><span>"+esc(l)+"</span><span style=\"margin-left:auto;color:var(--text)\">"+pc[l]+"</span></div>";}).join("");
+  })();
+
+  // Leaderboard
+  var ownerTotal={},ownerFlagged={};
+  filtered.forEach(function(l){var o=leadOwnerFirst(l);ownerTotal[o]=(ownerTotal[o]||0)+1;});
+  displayed.forEach(function(l){var o=leadOwnerFirst(l);ownerFlagged[o]=(ownerFlagged[o]||0)+1;});
+  var owners=Object.keys(ownerTotal).sort(function(a,b){return ((ownerFlagged[b]||0)/ownerTotal[b])-((ownerFlagged[a]||0)/ownerTotal[a]);});
+  var maxPct=owners.reduce(function(m,o){return Math.max(m,(ownerFlagged[o]||0)/ownerTotal[o]);},0);
+  var lbHtml="";
+  owners.forEach(function(o){
+    var pct=Math.round(((ownerFlagged[o]||0)/ownerTotal[o])*100);
+    var barW=maxPct>0?Math.round((pct/100/maxPct)*100):0;
+    lbHtml+="<div class=\"lb-row\"><div class=\"lb-name\">"+esc(o)+"</div>"+
+      "<div class=\"lb-bar-wrap\"><div class=\"lb-bar\" style=\"width:"+barW+"%;background:"+(PIE_COLORS[o]||"#507850")+"\" ></div></div>"+
+      "<div class=\"lb-pct\">"+pct+"%</div><div class=\"lb-count\">"+(ownerFlagged[o]||0)+"</div></div>";
+  });
+
+  // Most wanted
+  var wanted=displayed.slice().sort(function(a,b){
+    var md=leadMissingCount(b)-leadMissingCount(a);if(md!==0)return md;
+    return ((b.deal_value&&b.deal_value.amount)||0)-((a.deal_value&&a.deal_value.amount)||0);
+  }).slice(0,8);
+  var mwHtml="";
+  wanted.forEach(function(l){
+    var mc=leadMissingCount(l);
+    mwHtml+="<div class=\"mw-item\"><div class=\"mw-name\">"+esc(l.title)+"</div>"+
+      "<div class=\"mw-right\"><span class=\"mw-score\">"+mc+"</span>"+
+      "<a class=\"mw-link\" href=\"https://app.pipedrive.com/leads/inbox/"+l.id+"\" target=\"_blank\">↗</a></div></div>";
+  });
+
+  document.getElementById("lead-insights").innerHTML=
+    "<div class=\"insights-row\" style=\"grid-template-columns:1fr 1fr\">"+
+    "<div class=\"insight-card\"><div class=\"insight-title\">Owner leaderboard <span style=\"font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none\">— more missing data</span></div>"+lbHtml+"</div>"+
+    "<div class=\"insight-card\"><div class=\"insight-title\">Most wanted</div>"+mwHtml+"</div>"+
+    "</div>";
+
+  // Results
+  var el=document.getElementById("lead-results");
+  if(!displayed.length){
+    el.innerHTML="<div class=\"all-good-block\"><svg width=\"18\" height=\"18\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M5 13l4 4L19 7\"/></svg>"+(leadActiveFields.length?"No leads missing "+leadActiveFields.map(esc).join(" or ")+".":"All leads are complete.")+"</div>";
+    return;
+  }
+
+  // Build results via DOM to avoid all quote issues
+  var toolbar=document.createElement("div");
+  toolbar.className="results-toolbar";
+  var leftDiv=document.createElement("div");
+  leftDiv.style.cssText="display:flex;align-items:center;gap:10px";
+  var countSpan=document.createElement("span");
+  countSpan.className="results-count";
+  countSpan.textContent=displayed.length+" lead"+(displayed.length===1?"":"s");
+  leftDiv.appendChild(countSpan);
+  if(leadActiveFields.length){
+    var clearBtn=document.createElement("button");
+    clearBtn.className="filter-clear";
+    clearBtn.style.cssText="height:28px;padding:0 10px;font-size:10px";
+    clearBtn.textContent="Clear field filters";
+    clearBtn.addEventListener("click",function(){leadActiveFields=[];renderLeads();});
+    leftDiv.appendChild(clearBtn);
+  }
+  toolbar.appendChild(leftDiv);
+  var sortDiv=document.createElement("div");
+  sortDiv.className="sort-group";
+  var sortLabel=document.createElement("span");
+  sortLabel.className="sort-label";sortLabel.textContent="Sort:";
+  sortDiv.appendChild(sortLabel);
+  [["alpha","A–Z"],["missing","Most missing"],["value","Value"]].forEach(function(pair){
+    var btn=document.createElement("button");
+    btn.className="lead-sort-btn sort-btn"+(leadSortMode===pair[0]?" active":"");
+    btn.dataset.sort=pair[0];btn.textContent=pair[1];
+    btn.addEventListener("click",function(){setLeadSort(pair[0]);});
+    sortDiv.appendChild(btn);
+  });
+  toolbar.appendChild(sortDiv);
+
+  var list=document.createElement("div");
+  list.className="results-list";
+  displayed.forEach(function(l,i){
+    var ownerName=(l.owner_id&&l.owner_id.name)||"Unknown";
+    var issues=LEAD_CHECKS.filter(function(c){return isEmpty(l[c.key]);}).map(function(c){return c.label;});
+    var pct=leadCompletionPct(l);
+    var item=document.createElement("div");
+    item.className="result-item";
+    item.style.animationDelay=Math.min(i*10,300)+"ms";
+    var head=document.createElement("div");
+    head.className="result-head";
+    var nameSpan=document.createElement("span");
+    nameSpan.className="result-name";nameSpan.textContent=l.title;
+    var metaDiv=document.createElement("div");
+    metaDiv.style.cssText="display:flex;gap:8px;align-items:center;flex-wrap:wrap";
+    var ownerSpan=document.createElement("span");
+    ownerSpan.className="result-meta";ownerSpan.textContent=ownerName;
+    var link=document.createElement("a");
+    link.className="result-link";link.href="https://app.pipedrive.com/leads/inbox/"+l.id;
+    link.target="_blank";link.textContent="↗ open";
+    metaDiv.appendChild(ownerSpan);metaDiv.appendChild(link);
+    head.appendChild(nameSpan);head.appendChild(metaDiv);
+    var body=document.createElement("div");
+    body.className="result-body";
+    var missingDiv=document.createElement("div");
+    missingDiv.className="missing-fields";
+    issues.forEach(function(lbl){
+      var pill=document.createElement("span");
+      pill.className="missing-pill";
+      pill.innerHTML="<span class=\"missing-dot\"></span>"+esc(lbl);
+      missingDiv.appendChild(pill);
+    });
+    body.appendChild(missingDiv);
+    body.innerHTML+=scoreRing(pct);
+    item.appendChild(head);item.appendChild(body);
+    list.appendChild(item);
+  });
+
+  el.innerHTML="";
+  el.appendChild(toolbar);
+  el.appendChild(list);
+}
+
 </script>
 </body>
 </html>
