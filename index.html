@@ -292,6 +292,14 @@ var CHECKS = [
   {label:'Source (Attribution)',  key:'6bd83ae8d8f32627e17d8bb7028bbb52082245a8'}
 ];
 var KNOWN_OWNERS = ['Amy','Fady','Matt','Myron','Merryn'];
+var USER_MAP = {
+  11318906:'Amy',13961650:'Matt',11302998:'Merryn',12822990:'Myron',24491424:'Fady',
+  13151951:'Andrew',13903383:'Ben',23562232:'Clay',11568092:'Duncan',11469250:'Ed',
+  22146092:'Freddy',12505898:'Gary',12003426:'Georgia',14190329:'Jonathan',
+  22726914:'Kari',13160707:'Keaton',11299260:'Management',11299226:'Marketing',
+  13387461:'Nick',13056757:'Nikhil',12872188:'Operations',24551011:'Owen',
+  11438136:'Rob',11302986:'Rory',23235169:'Sian',11672062:'Simeon',11302988:'Tom'
+};
 
 var LEAD_CHECKS = [
   {label:'Source (details)',      key:'bfedadd6c4e6c2e5af96384d7b5b2c4065737c69'},
@@ -773,9 +781,10 @@ function setLeadSort(mode){
 }
 
 function leadOwnerFirst(l){
-  var n=(l.owner_id&&l.owner_id.name)||"Unknown";
-  var f=n.split(" ")[0];
-  return KNOWN_OWNERS.indexOf(f)!==-1?f:"Other";
+  var id=l.owner_id;
+  if(typeof id==='object'&&id!==null) id=id.id||id.value;
+  var name=USER_MAP[id]||"Other";
+  return KNOWN_OWNERS.indexOf(name)!==-1?name:"Other";
 }
 
 function leadMissingCount(l){return LEAD_CHECKS.filter(function(c){return isEmpty(l[c.key]);}).length;}
