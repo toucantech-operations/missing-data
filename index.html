@@ -268,6 +268,7 @@ var STAGE_ORDER = [54,55,58,56,59,57,60];
 var OWNER_OPTIONS = ['Amy','Fady','Matt','Myron','Merryn','Other'];
 var STAGE_OPTIONS = STAGE_ORDER.map(function(id){return {id:String(id),name:STAGES[id]};});
 var CHECKS = [
+  {label:'Source (details)',      key:'bfedadd6c4e6c2e5af96384d7b5b2c4065737c69'},
   {label:'Size',            key:'55316164ecec27deb69e66cdd1ea1b908f75514a'},
   {label:'Struggles',       key:'acfda2844d0b596f52ce91899dde7e6e4fd38370'},
   {label:'Softwares',       key:'1ae94f5f8fe79a6a2758337bb1a20fc403cacd68'},
@@ -278,7 +279,6 @@ var CHECKS = [
   {label:'Competitors',     key:'e3f3dad7e208d601384a087c9ff83de3f1c07370'},
   {label:'Objections',      key:'5bda8cb706195ea83dc54627b39c98df8496bc52'},
   {label:'Website',              key:'__website__'},
-  {label:'Source (details)',      key:'bfedadd6c4e6c2e5af96384d7b5b2c4065737c69'},
   {label:'Source (Attribution)',  key:'6bd83ae8d8f32627e17d8bb7028bbb52082245a8'}
 ];
 var KNOWN_OWNERS = ['Amy','Fady','Matt','Myron','Merryn'];
@@ -298,8 +298,7 @@ function isEmpty(v){if(v===undefined||v===null||v==='')return true;if(typeof v==
 function isMissing(deal,check){if(check.key==='__website__')return websiteFilterIds.has(deal.id);return isEmpty(deal[check.key]);}
 function isStar(d){
   if(d.title&&d.title.indexOf('***')!==-1)return true;
-  if(d.label_ids&&d.label_ids.indexOf(1368)!==-1)return true;
-  if(d.label===1368)return true;
+  if(d.label&&String(d.label).split(',').map(function(s){return s.trim();}).indexOf('1368')!==-1)return true;
   return false;
 }
 function ownerFirst(d){var n=d.owner_name||(d.user_id&&d.user_id.name)||'Unknown';var f=n.split(' ')[0];return KNOWN_OWNERS.indexOf(f)!==-1?f:'Other';}
