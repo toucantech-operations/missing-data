@@ -537,7 +537,7 @@ function renderInsights(filtered,flagged,displayed){
   var owners=Object.keys(ownerTotal).sort(function(a,b){
     var pa=(ownerFlagged[a]||0)/ownerTotal[a];
     var pb=(ownerFlagged[b]||0)/ownerTotal[b];
-    return pb-pa;
+    return pa-pb;
   });
   var maxPct=owners.reduce(function(m,o){return Math.max(m,(ownerFlagged[o]||0)/ownerTotal[o]);},0);
   var lbHtml='';
