@@ -925,7 +925,7 @@ function renderLeads(){
   var ownerTotal={},ownerFlagged={};
   filtered.forEach(function(l){var o=leadOwnerFirst(l);ownerTotal[o]=(ownerTotal[o]||0)+1;});
   displayed.forEach(function(l){var o=leadOwnerFirst(l);ownerFlagged[o]=(ownerFlagged[o]||0)+1;});
-  var owners=Object.keys(ownerTotal).sort(function(a,b){return ((ownerFlagged[b]||0)/ownerTotal[b])-((ownerFlagged[a]||0)/ownerTotal[a]);});
+  var owners=Object.keys(ownerTotal).sort(function(a,b){return ((ownerFlagged[a]||0)/ownerTotal[a])-((ownerFlagged[b]||0)/ownerTotal[b]);});
   var maxPct=owners.reduce(function(m,o){return Math.max(m,(ownerFlagged[o]||0)/ownerTotal[o]);},0);
   var lbHtml="";
   owners.forEach(function(o){
