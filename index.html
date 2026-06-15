@@ -17,6 +17,17 @@
   --sans:"Jost",system-ui,sans-serif;
   --mono:"JetBrains Mono",monospace;
   --t:200ms ease;
+  --bg:#041C18;--surface:#072820;--surface2:#021210;
+  --border:#0C4030;--bs:#186850;
+  --text:#D8FFE8;--muted:#50B888;
+  --accent:#C8C000;--accent-fg:#101000;--glow:#40E8C0;
+  --tag:#0A3828;
+  --dbg:#201800;--dborder:#604800;--dtext:#E8C040;
+  --sbg:#041C10;--sborder:#107040;--stext:#40E090;
+  --star:#C8C000;--star-bg:#1A1800;--star-border:#403800;
+}
+html{font-size:16px}
+body.light-mode{
   --bg:#F0F8F4;--surface:#FFFFFF;--surface2:#EEF8F2;
   --border:#C8E4D4;--bs:#1A8A56;
   --text:#0F2E1E;--muted:#3A7A58;
@@ -26,7 +37,6 @@
   --sbg:#EAF8EE;--sborder:#90D8A8;--stext:#1A6040;
   --star:#A07800;--star-bg:#FDF6E0;--star-border:#E8C060;
 }
-html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;min-height:100vh;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
 .shell{max-width:1060px;margin:0 auto;padding:28px 24px 80px}
 
@@ -195,10 +205,17 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--border);font-
       <p>Open deals in Main Pipeline with incomplete fields.</p>
     </div>
     <div class="header-right">
-      <button class="refresh-btn" id="refresh-btn" onclick="refresh()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-        Refresh
-      </button>
+      <div style="display:flex;gap:8px">
+        <button class="refresh-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark mode">
+          <svg id="theme-icon-dark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg id="theme-icon-light" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          <span id="theme-label">Light mode</span>
+        </button>
+        <button class="refresh-btn" id="refresh-btn" onclick="refresh()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
       <div class="last-updated" id="last-updated"></div>
     </div>
   </header>
@@ -412,6 +429,20 @@ function toggleFieldFilter(label){
   if(idx===-1){activeFields.push(label);}else{activeFields.splice(idx,1);}
   renderResults();
 }
+function setLbMode(mode){
+  window.lbMode = mode;
+  // re-render insights with current state
+  if(allDeals.length){
+    var filtered=applyFilters();
+    var flagged=filtered.filter(function(d){return CHECKS.some(function(c){return isMissing(d,c);});});
+    var displayed=activeFields.length
+      ?flagged.filter(function(d){return activeFields.some(function(lbl){var c=CHECKS.find(function(c){return c.label===lbl;});return c&&isMissing(d,c);});})
+      :flagged;
+    displayed=sortDeals(displayed);
+    renderInsights(filtered,flagged,displayed);
+  }
+}
+
 function setSort(mode){
   sortMode=mode;
   document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.toggle('active',b.dataset.sort===mode);});
@@ -496,6 +527,14 @@ async function loadDeals(){
   rbtn.classList.remove('spinning');rbtn.disabled=false;
 }
 
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light-mode');
+  document.getElementById('theme-label').textContent = isLight ? 'Dark mode' : 'Light mode';
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  try { localStorage.setItem('pd-theme', isLight ? 'light' : 'dark'); } catch(e){}
+}
+
 function refresh(){
   loadDeals();
   if(allLeads.length>0) loadLeads();
@@ -529,54 +568,73 @@ function renderPie(deals){
 
 /* ── Insights ── */
 function renderInsights(filtered,flagged,displayed){
-  /* Leaderboard: % of each owner's deals that are incomplete (uses displayed when field filter active) */
-  var lbSource=displayed;
-  var ownerTotal={},ownerFlagged={};
-  filtered.forEach(function(d){var o=ownerFirst(d);ownerTotal[o]=(ownerTotal[o]||0)+1;});
-  lbSource.forEach(function(d){var o=ownerFirst(d);ownerFlagged[o]=(ownerFlagged[o]||0)+1;});
-  var owners=Object.keys(ownerTotal).sort(function(a,b){
-    var pa=(ownerFlagged[a]||0)/ownerTotal[a];
-    var pb=(ownerFlagged[b]||0)/ownerTotal[b];
-    return pa-pb;
+  var lbMode = window.lbMode || 'deals';
+
+  /* ── Per-owner stats across ALL filtered deals ── */
+  var ownerDeals={}, ownerComplete={}, ownerFieldPct={};
+  filtered.forEach(function(d){
+    var o=ownerFirst(d);
+    ownerDeals[o]=(ownerDeals[o]||0)+1;
+    if(missingCount(d)===0) ownerComplete[o]=(ownerComplete[o]||0)+1;
+    ownerFieldPct[o]=(ownerFieldPct[o]||0)+completionPct(d);
   });
-  var maxPct=owners.reduce(function(m,o){return Math.max(m,(ownerFlagged[o]||0)/ownerTotal[o]);},0);
+  function ownerScore(o){
+    if(!ownerDeals[o])return 0;
+    if(lbMode==='fields')return Math.round(ownerFieldPct[o]/ownerDeals[o]);
+    return Math.round(((ownerComplete[o]||0)/ownerDeals[o])*100);
+  }
+  var owners=Object.keys(ownerDeals).sort(function(a,b){return ownerScore(b)-ownerScore(a);});
+  var maxScore=owners.reduce(function(m,o){return Math.max(m,ownerScore(o));},0);
+
   var lbHtml='';
   owners.forEach(function(o){
-    var pct=Math.round(((ownerFlagged[o]||0)/ownerTotal[o])*100);
-    var barW=maxPct>0?Math.round((pct/100/maxPct)*100):0;
+    var score=ownerScore(o);
+    var barW=maxScore>0?Math.round((score/maxScore)*100):0;
+    var subtitle=lbMode==='fields'
+      ?'avg '+score+'% fields filled'
+      :(ownerComplete[o]||0)+'/'+ownerDeals[o]+' deals complete';
     lbHtml+='<div class="lb-row">'+
       '<div class="lb-name">'+esc(o)+'</div>'+
-      '<div class="lb-bar-wrap"><div class="lb-bar" style="width:'+barW+'%;background:'+(PIE_COLORS[o]||'#507850')+'"></div></div>'+
-      '<div class="lb-pct">'+pct+'%</div>'+
-      '<div class="lb-count">'+(ownerFlagged[o]||0)+'</div>'+
+      '<div style="flex:1">'+
+        '<div class="lb-bar-wrap" style="margin-bottom:2px"><div class="lb-bar" style="width:'+barW+'%;background:'+(PIE_COLORS[o]||'#507850')+'"></div></div>'+
+        '<div style="font-size:9px;font-family:var(--mono);color:var(--muted)">'+subtitle+'</div>'+
+      '</div>'+
+      '<div class="lb-pct">'+score+'%</div>'+
       '</div>';
   });
 
-  /* Stage heatmap: uses displayed when field filter active */
-  var hmSource=displayed;
-  var stageTotal={},stageFlagged={};
-  filtered.forEach(function(d){var s=String(d.stage_id);stageTotal[s]=(stageTotal[s]||0)+1;});
-  hmSource.forEach(function(d){var s=String(d.stage_id);stageFlagged[s]=(stageFlagged[s]||0)+1;});
-  var stageMaxPct=STAGE_ORDER.reduce(function(m,id){
-    var s=String(id);
-    return stageTotal[s]?Math.max(m,(stageFlagged[s]||0)/stageTotal[s]):m;
+  /* ── Per-stage stats ── */
+  var stageDeals={},stageComplete={},stageFieldPct={};
+  filtered.forEach(function(d){
+    var s=String(d.stage_id);
+    stageDeals[s]=(stageDeals[s]||0)+1;
+    if(missingCount(d)===0) stageComplete[s]=(stageComplete[s]||0)+1;
+    stageFieldPct[s]=(stageFieldPct[s]||0)+completionPct(d);
+  });
+  function stageScore(s){
+    if(!stageDeals[s])return 0;
+    if(lbMode==='fields')return Math.round(stageFieldPct[s]/stageDeals[s]);
+    return Math.round(((stageComplete[s]||0)/stageDeals[s])*100);
+  }
+  var stageMaxScore=STAGE_ORDER.reduce(function(m,id){
+    return stageDeals[String(id)]?Math.max(m,stageScore(String(id))):m;
   },0);
   var hmHtml='';
   STAGE_ORDER.forEach(function(id){
     var s=String(id);
-    if(!stageTotal[s])return;
-    var pct=Math.round(((stageFlagged[s]||0)/stageTotal[s])*100);
-    var barW=stageMaxPct>0?Math.round((pct/100/stageMaxPct)*100):0;
-    var col=pct>=70?'#E07040':pct>=30?'#C8A000':'#40B870';
+    if(!stageDeals[s])return;
+    var score=stageScore(s);
+    var barW=stageMaxScore>0?Math.round((score/stageMaxScore)*100):0;
+    var col=score>=70?'#40B870':score>=30?'#C8A000':'#E07040';
     hmHtml+='<div class="heatmap-row">'+
       '<div class="heatmap-stage" title="'+esc(STAGES[id]||id)+'">'+esc((STAGES[id]||id).replace('Made (Slow)','(S)').replace('Made (Fast)','(F)'))+'</div>'+
       '<div class="heatmap-bar-wrap"><div class="heatmap-bar" style="width:'+barW+'%;background:'+col+'"></div></div>'+
-      '<div class="heatmap-pct">'+pct+'%</div>'+
+      '<div class="heatmap-pct">'+score+'%</div>'+
       '</div>';
   });
 
-  /* Most wanted: top 8 from displayed (respects field filter), by missing count then value */
-  var MW_STAGE_ORDER=[60,57,59,56,58,55,54]; // awaiting contract first
+  /* ── Most wanted ── */
+  var MW_STAGE_ORDER=[60,57,59,56,58,55,54];
   var wanted=displayed.slice().sort(function(a,b){
     var ai=MW_STAGE_ORDER.indexOf(a.stage_id),bi=MW_STAGE_ORDER.indexOf(b.stage_id);
     if(ai!==bi)return (ai===-1?99:ai)-(bi===-1?99:bi);
@@ -593,20 +651,53 @@ function renderInsights(filtered,flagged,displayed){
       '<div class="mw-name">'+(star?'<span style="color:var(--star);margin-right:3px">&#9733;</span>':'')+esc(title)+'</div>'+
       '<div class="mw-right">'+
         '<span class="mw-score">'+mc+'</span>'+
-        '<a class="mw-link" href="https://app.pipedrive.com/deal/'+d.id+'" target="_blank">\u2197</a>'+
-      '</div>'+
-      '</div>';
+        '<a class="mw-link" href="https://app.pipedrive.com/deal/'+d.id+'" target="_blank">↗</a>'+
+      '</div></div>';
   });
+
+  /* ── Render ── */
+  // Build mode toggle buttons via DOM to avoid quote escaping
+  var modeBtnEl = document.createElement('div');
+  modeBtnEl.style.cssText = 'display:flex;gap:4px';
+  [['deals','Deal %'],['fields','Field score']].forEach(function(pair){
+    var b = document.createElement('button');
+    b.className = 'sort-btn' + (lbMode===pair[0]?' active':'');
+    b.style.cssText = 'height:22px;padding:0 8px;font-size:9px;letter-spacing:0.04em';
+    b.textContent = pair[1];
+    b.addEventListener('click', function(){ setLbMode(pair[0]); });
+    modeBtnEl.appendChild(b);
+  });
+  var modeBtn = modeBtnEl.outerHTML;
+  var lbSubtitle=lbMode==='fields'
+    ?'— avg fields filled'
+    :'— % of deals complete';
+  var hmSubtitle=lbMode==='fields'
+    ?'— avg fields filled'
+    :'— % of deals complete';
 
   document.getElementById('pd-insights').innerHTML=
     '<div class="insights-row">'+
-    '<div class="insight-card"><div class="insight-title">Owner leaderboard <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— more missing data</span></div>'+lbHtml+'</div>'+
-    '<div class="insight-card"><div class="insight-title">Stage heatmap <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">— % incomplete</span></div>'+hmHtml+'</div>'+
-    '<div class="insight-card"><div class="insight-title" style="display:flex;align-items:center;gap:5px">Most wanted<span class="info-btn">ⓘ<span class="info-tooltip">Ranked by number of missing fields (out of 10). Ties broken by deal value — higher value ranks first. Shows the top 8 deals most in need of attention.</span></span></div>'+mwHtml+'</div>'+
+    '<div class="insight-card">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<div class="insight-title">Owner leaderboard <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">'+lbSubtitle+'</span></div>'+
+        modeBtn+
+      '</div>'+lbHtml+
+    '</div>'+
+    '<div class="insight-card">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<div class="insight-title">Stage heatmap <span style="font-size:9px;color:var(--dtext);font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none">'+hmSubtitle+'</span></div>'+
+        modeBtn+
+      '</div>'+hmHtml+
+    '</div>'+
+    '<div class="insight-card">'+
+      '<div style="display:flex;align-items:center;gap:5px;margin-bottom:10px" class="insight-title">Most wanted'+
+        '<span class="info-btn">ⓘ<span class="info-tooltip">Ranked by pipeline stage (later = more urgent), then missing field count, then deal value. Top 8 deals most in need of attention.</span></span>'+
+      '</div>'+mwHtml+
+    '</div>'+
     '</div>';
 }
 
-/* ── Score ring ── */
+
 function scoreRing(pct){
   var r=15,circ=2*Math.PI*r;
   var offset=circ-(pct/100)*circ;
@@ -727,6 +818,7 @@ function renderResults(){
 }
 
 (function init(){
+  try{if(localStorage.getItem('pd-theme')==='light'){document.body.classList.add('light-mode');document.getElementById('theme-label').textContent='Dark mode';document.getElementById('theme-icon-dark').style.display='none';document.getElementById('theme-icon-light').style.display='';}}catch(e){}
   initMultiSelect('ms-owner',OWNER_OPTIONS,false);
   initMultiSelect('ms-stage',STAGE_OPTIONS,true);
   // Lead owner dropdown — uses its own handler
