@@ -589,7 +589,7 @@ function renderInsights(filtered,flagged,displayed){
   var lbHtml='';
   owners.forEach(function(o){
     var score=ownerScore(o);
-    var barW=maxScore>0?Math.round((score/maxScore)*100):0;
+    var barW=score;
     var subtitle=lbMode==='fields'
       ?'avg '+score+'% fields filled'
       :(ownerComplete[o]||0)+'/'+ownerDeals[o]+' deals complete';
@@ -624,7 +624,7 @@ function renderInsights(filtered,flagged,displayed){
     var s=String(id);
     if(!stageDeals[s])return;
     var score=stageScore(s);
-    var barW=stageMaxScore>0?Math.round((score/stageMaxScore)*100):0;
+    var barW=score;
     var col=score>=70?'#40B870':score>=30?'#C8A000':'#E07040';
     hmHtml+='<div class="heatmap-row">'+
       '<div class="heatmap-stage" title="'+esc(STAGES[id]||id)+'">'+esc((STAGES[id]||id).replace('Made (Slow)','(S)').replace('Made (Fast)','(F)'))+'</div>'+
@@ -656,18 +656,11 @@ function renderInsights(filtered,flagged,displayed){
   });
 
   /* ── Render ── */
-  // Build mode toggle buttons via DOM to avoid quote escaping
-  var modeBtnEl = document.createElement('div');
-  modeBtnEl.style.cssText = 'display:flex;gap:4px';
-  [['deals','Deal %'],['fields','Field score']].forEach(function(pair){
-    var b = document.createElement('button');
-    b.className = 'sort-btn' + (lbMode===pair[0]?' active':'');
-    b.style.cssText = 'height:22px;padding:0 8px;font-size:9px;letter-spacing:0.04em';
-    b.textContent = pair[1];
-    b.addEventListener('click', function(){ setLbMode(pair[0]); });
-    modeBtnEl.appendChild(b);
-  });
-  var modeBtn = modeBtnEl.outerHTML;
+  var modeBtn =
+    '<div style="display:flex;gap:4px">' +
+    '<button class="sort-btn' + (lbMode==='deals'?' active':'') + '" style="height:22px;padding:0 8px;font-size:9px;letter-spacing:0.04em" data-lbmode="deals">Deal %</button>' +
+    '<button class="sort-btn' + (lbMode==='fields'?' active':'') + '" style="height:22px;padding:0 8px;font-size:9px;letter-spacing:0.04em" data-lbmode="fields">Field score</button>' +
+    '</div>';
   var lbSubtitle=lbMode==='fields'
     ?'— avg fields filled'
     :'— % of deals complete';
@@ -695,6 +688,11 @@ function renderInsights(filtered,flagged,displayed){
       '</div>'+mwHtml+
     '</div>'+
     '</div>';
+
+  // Attach mode toggle listeners (delegated)
+  document.querySelectorAll('#pd-insights [data-lbmode]').forEach(function(btn){
+    btn.addEventListener('click', function(){ setLbMode(btn.dataset.lbmode); });
+  });
 }
 
 
